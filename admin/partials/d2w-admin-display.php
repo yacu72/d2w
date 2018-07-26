@@ -18,6 +18,16 @@
 		if ( ! defined( 'WPINC' ) ) die;
 	?>
 	
+	<?php
+	/**
+	 * This form hold's all the calls related to migration functions.
+	 */
+	?>
+
 	<div class="wrap">
-		<h2>Plugin name <?php _e(' Options', $this->plugin_name); ?></h2>
+		<h2>D2W <?php _e(' Options', $this->plugin_name); ?></h2>
+
+		<form method="" name="d2w_settings" action="options.php">
+			<input class="button button-migrate-pages" type="submit" value="Migrate pages">
+		</form>
 	</div>

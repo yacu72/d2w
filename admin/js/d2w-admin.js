@@ -9,7 +9,7 @@
 	 * $ function reference has been prepared for usage within the scope
 	 * of this function.
 	 *
-	 * This enables you to define handlers, for when the DOM is ready:
+	 * This enables you to define handlers, for when the DOM is ready :
 	 *
 	 * $(function() {
 	 *
@@ -28,5 +28,12 @@
 	 * Although scripts in the WordPress core, Plugins and Themes may be
 	 * practising this, we should strive to set a better example in our own work.
 	 */
+	 $(document).ready(function() {
+
+	 	$('.button-migrate-pages').click(function(){
+
+	 		return false;
+	 	});
+	 });
 
 })( jQuery );
