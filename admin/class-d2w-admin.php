@@ -117,7 +117,7 @@ class D2w_Admin {
     	 *
     	 * @link https://codex.wordpress.org/Function_Reference/add_options_page
     	 */
-    	add_submenu_page( 'Plugin settings page title', 'Admin area menu slug', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page')
+    	add_submenu_page( 'plugins.php', 'Plugin settings page title', 'Admin area menu slug', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page')
     	);
 	}
 
