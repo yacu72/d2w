@@ -100,4 +100,34 @@ class D2w_Admin {
 
 	}
 
+	/**
+ 	* Register the administration menu for this plugin into the WordPress Dashboard menu.
+ 	*
+ 	* @since    1.0.0
+ 	*/
+	public function add_plugin_admin_menu() {
+    	/**
+    	 * Add a settings page for this plugin to the Settings menu.
+    	 *
+    	 * NOTE:  Alternative menu locations are available via WordPress administration menu functions.
+    	 *
+    	 *        Administration Menus: http://codex.wordpress.org/Administration_Menus
+    	 *
+    	 * add_options_page( $page_title, $menu_title, $capability, $menu_slug, $function);
+    	 *
+    	 * @link https://codex.wordpress.org/Function_Reference/add_options_page
+    	 */
+    	add_submenu_page( 'plugins.php', 'Plugin settings page title', 'Admin area menu slug', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page')
+    	);
+	}
+
+	/**
+ 	* Render the settings page for this plugin.
+ 	*
+ 	* @since    1.0.0
+ 	*/
+	public function display_plugin_setup_page() {
+    	include_once( 'partials/' . $this->plugin_name . '-admin-display.php' );
+	}
+
 }

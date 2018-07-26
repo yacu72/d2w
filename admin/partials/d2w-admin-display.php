@@ -13,4 +13,11 @@
  */
 ?>
 
-<!-- This file should primarily consist of HTML with a little bit of PHP. -->
+	<?php	
+		// If this file is called directly, abort.
+		if ( ! defined( 'WPINC' ) ) die;
+	?>
+	
+	<div class="wrap">
+		<h2>Plugin name <?php _e(' Options', $this->plugin_name); ?></h2>
+	</div>
