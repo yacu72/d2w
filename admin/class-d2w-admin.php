@@ -98,6 +98,16 @@ class D2w_Admin {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/d2w-admin.js', array( 'jquery' ), $this->version, false );
 
+    /**
+     *  In backend there is global ajaxurl variable defined by WordPress itself.
+     *
+     * This variable is not created by WP in frontend. It means that if you want to use AJAX calls in frontend, then you have to define such variable by yourself.
+     * Good way to do this is to use wp_localize_script.
+     *
+     * @link http://wordpress.stackexchange.com/a/190299/90212
+     */
+    wp_localize_script( $this->plugin_name, 'wp_ajax', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );			
+
 	}
 
 	/**
@@ -117,7 +127,7 @@ class D2w_Admin {
     	 *
     	 * @link https://codex.wordpress.org/Function_Reference/add_options_page
     	 */
-    	add_submenu_page( 'plugins.php', 'Plugin settings page title', 'Admin area menu slug', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page')
+    	add_submenu_page( 'plugins.php', 'Plugin settings page title', 'Admin area D2W', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page')
     	);
 	}
 
@@ -129,5 +139,93 @@ class D2w_Admin {
 	public function display_plugin_setup_page() {
     	include_once( 'partials/' . $this->plugin_name . '-admin-display.php' );
 	}
+
+	/**
+	 * Ajax process for page migration
+	 */
+	public function d2w_migrate_page_handler() {
+		
+		$data = array();
+		$data = $_POST['id'];
+
+		if ( $data == 'migrate-users-button' ) {
+			$out = 'button clicek was user migrate';
+		}
+
+		if ( $data == 'migrate-pages-button' ) {
+			$out = 'button clicek was page migrate';
+		}
+
+		$send_to_ajax = array(
+			'data' => $data,
+			'msg' => $out,
+		);
+
+		echo json_encode($send_to_ajax);
+
+		exit;
+	}
+
+	/**
+	 * Ajax process for field pairing
+	 */
+	public function d2w_field_relationship_save() {
+
+		// exit if no wp field is selected
+		if ( !$_POST['pod_field']) {
+			exit;
+		}		
+
+		$post_type = $_POST['post_type'];
+		$drupal_field = $_POST['drupal_field'];
+		$wp_field = $_POST['pod_field'];
+
+		$field_par = get_option('d2w-fields-par');
+
+		$field_par[$post_type][$drupal_field] = $wp_field;
+
+		$option_saved = update_option( "d2w-fields-par", $field_par );		
+
+		$send_to_ajax = array(
+			'data' => $option_saved,
+			'fields' => $post_type .'|'. $drupal_field .'|'. $pod_field,
+		);
+
+		echo json_encode($send_to_ajax);
+
+		exit;		
+
+	}
+
+	/**
+	 * Ajax process for node types pairing
+	 */
+	public function d2w_node_type_relationship_save() {
+
+		// exit if no wp post type is selected
+		if ( !$_POST['wp_post_type']) {
+			exit;
+		}
+
+		$drupal_post_type = $_POST['drupal_post_type'];
+		$wp_post_type = $_POST['wp_post_type'];
+
+		$node_type_par = get_option('d2w-node-types-par');
+
+		$node_type_par[$drupal_post_type] = $wp_post_type;
+
+		$option_saved = update_option( "d2w-node-types-par", $node_type_par );		
+
+		$send_to_ajax = array(
+			'data' => $option_saved,
+			'fields' => $drupal_post_type .'|'. $wp_post_type,
+		);
+
+		echo json_encode($send_to_ajax);
+
+		exit;		
+
+	}
+
 
 }

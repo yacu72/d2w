@@ -122,6 +122,12 @@ class D2w {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-d2w-public.php';
 
+		/**
+		 * Load custom clases with migrate functions
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate_Users.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-post-types.php';
+
 		$this->loader = new D2w_Loader();
 
 	}
@@ -157,8 +163,26 @@ class D2w {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
-    	// Add menu item
-    	$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
+  	// Add menu item
+  	$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
+
+    /**
+     * Ajax call for migrate ppages post type
+     */
+    $this->loader->add_action( 'wp_ajax_d2w_migrate_page_action', $plugin_admin, 'd2w_migrate_page_handler' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_page_action', $plugin_admin, 'd2w_migrate_page_handler' ); 
+
+    /**
+     * Ajax call for creation for field pairing
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_field_relationship_action', $plugin_admin, 'd2w_field_relationship_save' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_field_relationship_action', $plugin_admin, 'd2w_field_relationship_save' );
+
+         /**
+     * Ajax call for creation for field pairing
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_node_type_relationship_action', $plugin_admin, 'd2w_node_type_relationship_save' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_node_type_relationship_action', $plugin_admin, 'd2w_node_type_relationship_save' );
 
 	}
 
