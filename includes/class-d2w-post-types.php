@@ -121,8 +121,6 @@ class d2w_Migrate_Post_Types {
 	public function d2w_migrate_drupal_node_types_list() {
 		global $wpdb;
 
-		$out = '';
-
 		$sql = "SELECT type, name FROM node_type";
 
 		$types = $wpdb->get_results($sql);
@@ -141,6 +139,8 @@ class d2w_Migrate_Post_Types {
 	 */
 	public function d2w_migrate_node_fields( $node_type ) {
 		global $wpdb;
+
+		$out = '';
 
 		$content_type = 'content_type_'. $node_type;
 
