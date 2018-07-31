@@ -146,10 +146,10 @@ class d2w_Migrate_Post_Types {
 
 		$sql = "SELECT REPLACE(COLUMN_NAME,'_value', '') field_name
 FROM INFORMATION_SCHEMA.COLUMNS 
-WHERE TABLE_SCHEMA = 'med3_local_development' AND TABLE_NAME ='%s'
+WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME ='%s'
 AND COLUMN_NAME NOT IN ('vid', 'nid')";
 
-		$node_fields = $wpdb->get_results( $wpdb->prepare( $sql, $content_type ) );
+		$node_fields = $wpdb->get_results( $wpdb->prepare( $sql, $wpdb->dbname, $content_type ) );
 
 		foreach ($node_fields as $key => $field ) {
 			$fields[$field->field_name] = $field->field_name;
