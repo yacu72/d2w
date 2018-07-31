@@ -92,11 +92,14 @@
     //handles ajax calls for data migration
 	 	$('.button-migrate').click(function(){
 
-	 		var button = $(this).attr('name');
+	 		var drupal_type = $(this).attr('data-drupal-type');
+	 		var action = $(this).attr('data-action');
 
 	 		var dataJSON = {
 	 			'action': 'd2w_migrate_page_action',
-	 			'id': $('.migrate-form').serialize(),
+	 			//'id': $('.migrate-form').serialize(),
+	 			'drupal_type': drupal_type,
+	 			'action_type': action,
 	 		};
 
 	 		$.ajax({

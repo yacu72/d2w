@@ -145,19 +145,24 @@ class D2w_Admin {
 	 */
 	public function d2w_migrate_page_handler() {
 		
-		$data = array();
-		$data = $_POST['id'];
+		$action = $_POST['action_type'];
 
 		if ( $data == 'migrate-users-button' ) {
 			$out = 'button clicek was user migrate';
 		}
 
-		if ( $data == 'migrate-pages-button' ) {
-			$out = 'button clicek was page migrate';
+		if ( $action == 'migrate-content' ) {
+			$drupal_type = $_POST['drupal_type'];
+			$out = 'migrate content of the type: '. $drupal_type;
+
+			$migratePost = new d2w_Migrate_Post_Types;
+
+			$wp_post_type = $migratePost->d2w_migrate_content( $drupal_type, NULL,  143, 1);
 		}
 
 		$send_to_ajax = array(
-			'data' => $data,
+			'action' => $action,
+			'wp_type' => $wp_post_type,
 			'msg' => $out,
 		);
 

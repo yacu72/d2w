@@ -90,7 +90,7 @@
 											</select>
 										</dd>-->
 
-										<input name="migrate-<?php echo $type; ?>-button" class="button button-migrate" type="submit" value="Migrate <?php echo $name; ?>" >	
+										<input data-action="migrate-content" data-drupal-type="<?php echo $type; ?>" class="button button-migrate" type="submit" value="Migrate <?php echo $name; ?>" >	
 									</div>
 								</div>	
 
