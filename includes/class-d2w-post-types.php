@@ -2,19 +2,19 @@
 /**
  * Functions related to the migration of Users from Drupal to Wordpress .
  *
- * @param string $drupal_node_type, original node tpe to migrate
- * @param string $wp_post_type,  destination wordpress post type( this post type are created by activated plugins or using Pods Plugin )
- * @param int $node_nid, drupal node type ID
- * @param int $limit, number of items to migrate
- *
- * @return int $post_id, last ID of wordpress post created. TODO(how to interact with ajax call to show migration on live. )
- *
  * @since      1.0.0
  */
 class d2w_Migrate_Post_Types {
 
 	/**
 	 * Migrate content from Drupal to Wordpress
+	 *
+	 * @param string $drupal_node_type, original node tpe to migrate
+	 * @param string $wp_post_type,  destination wordpress post type( this post type are created by activated plugins or using Pods Plugin )
+	 * @param int $node_nid, drupal node type ID
+	 * @param int $limit, number of items to migrate
+	 *
+	 * @return int $post_id, last ID of wordpress post created. TODO(how to interact with ajax call to show migration on live. )	 
 	 */
 	public function d2w_migrate_content( $drupal_node_type, $wp_post_type = NULL, $node_nid = NULL , $limit = NULL) {
 
