@@ -114,6 +114,13 @@
 
 	 		return false;
 	 	});
+
+	 	// handles relation between drupal nodes ans wp tax
+	 	$('.button-migrate-tax').click(){
+	 		alert('clicked');
+	 		return false;
+	 	}
+
 	 });
 
 })( jQuery );

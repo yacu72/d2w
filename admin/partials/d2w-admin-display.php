@@ -31,6 +31,7 @@
 
 		$migrateFields = new d2w_Migrate_Post_fields;
 
+		$migrateTax = new d2w_Migrate_taxonomy;
 
 
 	?>
@@ -71,6 +72,28 @@
 									<?php } ?>
 
 								</div>
+							</div>
+							<!-- TAXONOMY -->
+							<div class="postbox">
+				        <button type="button" class="handlediv button-link" aria-expanded="true">
+				            <span class="screen-reader-text"><?php _e('Toggle panel'); ?></span>
+				            <span class="toggle-indicator" aria-hidden="true"></span>
+				        </button>
+								<h3 class="hndle ui-sortable-handle">
+									<span><?php _e( 'Migrate Taxonomy Terms', 'd2w' ); ?></span></h3>
+
+								<div class="inside">
+
+									<?php echo $migrateTax->d2w_drupal_node_to_tax_rel(); ?>
+
+									<!--<?php if ( !get_site_option('d2w_taxonomy_migrated') ) { ?>
+										<input data-action="migrate-tax" class="button button-migrate" type="submit" value="Migrate Taxonomy">	
+									<?php } else { ?>
+										<?php _e('Taxonomy Migration completed', 'd2w'); ?>
+									<?php } ?>-->
+
+								</div>
+
 							</div>
 
 							<?php foreach ($drupal_node_types as $type => $name) { ?>

@@ -113,6 +113,75 @@ class d2w_Migrate_taxonomy {
 			return $term;		
 	}
 
+	/**
+	 * Drupal node Type => wp taxonomy
+	 */
+	public function d2w_drupal_node_to_tax_rel() {
 
+		$post_types = get_post_types(array('public' => true ), 'names');
+
+		$taxs = get_taxonomies( array('public' => true ), 'names' );
+
+		// Taxonomy options
+		$options =  '<option value="0" >Select taxonomy...</option>';
+		foreach($taxs as $tax) {
+			$options .= '<option value='. $tax .'>'. $tax .'</option>';
+		}
+
+		$out = '<form>';
+
+		foreach($post_types as $post) {
+
+			$out .= '<label> '. $post .' </label>';
+			$out .= '<select data-post-type="'. $post .'" data-action="select-tax-rel">';
+			$out .= $options;
+			$out .= '</select>';
+			$out .= '<input class="button button-migrate-tax" type="submit" data-action="migrate-tax-rel" value="Migrate Taxonomy" >';
+			$out .= '<hr>';
+
+		}
+
+		$out .= '</form>';
+
+		return $out;
+
+	}
+
+	/**
+	 * Helper function extract taxonomy created with pods plugin.
+	 */
+	public function d2w_pods_taxonomies( $wp_post_type = NULL ) {
+		$pods_tax_data = get_option('_transient_pods_pods_get_type_taxonomy-2.7.1');
+
+		$post_types = get_post_types(array('public' => true ), 'names');
+
+		$taxs = get_taxonomies( array('public' => true ), 'names' );
+
+		print '<pre>';
+		print_r( $taxs );
+		print '</pre>';
+
+		print_r($post_types);
+
+
+		foreach ( $pods_tax_data as $tax_id => $tax_data ){
+		print '<pre>';
+		//print_r($tax_data);
+		print '</pre>';
+			$tax_name[$tax_data['id']] = $tax_data['name'];
+
+			foreach($post_types as $post_type) {
+				$post_key = 'built_in_post_types_'. $post_type;
+				if ( $tax_data['options'][$post_key] == 1 ){
+					$post_related[] = $post_type;
+				}
+			}
+		}
+
+		print_r($post_related);
+		print_r( $tax_name );
+	}
+
+	
 
 }

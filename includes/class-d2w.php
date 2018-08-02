@@ -128,6 +128,7 @@ class D2w {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate_Users.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-post-types.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-post-fields.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-taxonomy.php';
 
 		$this->loader = new D2w_Loader();
 
