@@ -31,6 +31,8 @@ class d2w_Migrate_Users {
 	public function d2w_migrate_users_action( ) {
 		global $wpdb;
 
+		$i = 0; //init counter
+
 		$sql = "SELECT * FROM users WHERE 1";
 
 		$res = $wpdb->get_results($sql);
@@ -44,6 +46,8 @@ class d2w_Migrate_Users {
 				
 				// Migrate old uid values to new DB
 				$wpdb->update($wpdb->users, array('old_uid' => $user->uid), array('ID' => $wp_user_id));
+
+				$i++;
 			
 			} else {
 				
@@ -57,7 +61,7 @@ class d2w_Migrate_Users {
 			update_option( 'd2w_users_migrated', true );
 		}
 
-		return $wp_user_id;
+		return $i;
 	}
 
 }

@@ -127,6 +127,7 @@ class D2w {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate_Users.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-post-types.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-post-fields.php';
 
 		$this->loader = new D2w_Loader();
 
@@ -165,6 +166,9 @@ class D2w {
 
   	// Add menu item
   	$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
+
+  	// Save meta post
+  	$this->loader->add_action( 'save_post', $plugin_admin, 'd2w_save_meta_options' );
 
     /**
      * Ajax call for migrate ppages post type

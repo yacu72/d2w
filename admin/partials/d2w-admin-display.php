@@ -27,11 +27,23 @@
 		//$types_options = $migratePost->d2w_migrate_post_types_options();
 
 		$drupal_node_types = $migratePost->d2w_migrate_drupal_node_types_list();
-		
+		//$migratePost->d2w_migrate_content( 'moflow_faq');
+
+		$migrateFields = new d2w_Migrate_Post_fields;
+
+
+
 	?>
 
 	<div class="wrap">
 		<h2>D2W <?php _e(' Options', $this->plugin_name); ?></h2>
+
+		<p>Before migration, create columns for old drupal id's</p>
+		<code>
+			ALTER TABLE wp_posts ADD old_ID bigint(20) unsigned NOT NULL default '0';<br>
+			ALTER TABLE wp_users ADD old_uid bigint(20) unsigned NOT NULL default '0';<br>
+			ALTER TABLE wp_comments ADD old_comment_ID bigint(20) unsigned NOT NULL default '0';<br>
+		</code>
 
 		<div id="poststuff">
 			<div id="post-body" class="metabox-holder">
@@ -53,7 +65,7 @@
 									<label><?php _e('Total Users to migrate: ','w2d'); ?></label><span><?php echo $migrateUsers->d2w_migrate_users_counter(); ?></span><br>  
 
 									<?php if ( !get_site_option('d2w_users_migrated') ) { ?>
-										<input name="migrate-users-button" class="button button-migrate" type="submit" value="Migrate Users">	
+										<input data-action="migrate-users" class="button button-migrate" type="submit" value="Migrate Users">	
 									<?php } else { ?>
 										<?php _e('User Migration completed', 'd2w'); ?>
 									<?php } ?>
@@ -79,7 +91,7 @@
 											<?php echo $migratePost->d2w_migrate_post_types_options( $type ) ?>
 										</select>
 
-										<h3>Map fields</h3>
+										<h3>Map fields:</h3>
 										<?php echo $migratePost->d2w_migrate_node_fields( $type ); ?>		
 										
 										<!--<dt>Node type Fields</dt>

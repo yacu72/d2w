@@ -1,6 +1,13 @@
 <?php
 /**
- * Functions related to the migration of Users from Drupal to Wordpress.
+ * Functions related to the migration of Users from Drupal to Wordpress .
+ *
+ * @param string $drupal_node_type, original node tpe to migrate
+ * @param string $wp_post_type,  destination wordpress post type( this post type are created by activated plugins or using Pods Plugin )
+ * @param int $node_nid, drupal node type ID
+ * @param int $limit, number of items to migrate
+ *
+ * @return int $post_id, last ID of wordpress post created. TODO(how to interact with ajax call to show migration on live. )
  *
  * @since      1.0.0
  */
@@ -9,15 +16,15 @@ class d2w_Migrate_Post_Types {
 	/**
 	 * Migrate content from Drupal to Wordpress
 	 */
-	public function d2w_migrate_content( $node_type, $post_type = NULL, $node_nid = NULL , $limit = NULL) {
+	public function d2w_migrate_content( $drupal_node_type, $wp_post_type = NULL, $node_nid = NULL , $limit = NULL) {
 
 		global $wpdb;
 
 		// Load saved node types relations
 		$node_type_par = get_option('d2w-node-types-par');
-		$post_type = $node_type_par[$drupal_node_type];		
+		$wp_post_type = $node_type_par[$drupal_node_type];		
 
-		$query_vars = array($node_type, 1);
+		$query_vars = array($drupal_node_type, 1);
 
 		$sql_and = '';
 		if ($node_nid) {
@@ -59,7 +66,9 @@ class d2w_Migrate_Post_Types {
 			$post_id = -1;
 
 			//check the page title doesn't exists
-			if (null == get_page_by_title( $post_title)) {
+			if (null == get_page_by_title( $node->type )) {
+
+				// Insert post in DB
 				$post_id = wp_insert_post (
 					array (
 						'comment_status' => $comment_status,
@@ -71,7 +80,7 @@ class d2w_Migrate_Post_Types {
 						'post_excerpt' => $node->teaser,
 						'post_date' => $post_date,
 						'post_modified' => $post_modified,
-						'post_type' => $post_type,
+						'post_type' => $wp_post_type,
 						'post_status' => $post_status,
 						'comment_count' => $comment_count
 					)
@@ -80,26 +89,41 @@ class d2w_Migrate_Post_Types {
 				// save original id in new register for future reference
 				$wpdb->update($wpdb->posts, array('old_ID' => $node->nid), array('ID' => $post_id));
 
+
+
+				// Save fields values
+				$migrateFields = new d2w_Migrate_Post_fields;
+				$meta_array = $migrateFields->d2w_migrate_drupal_fields( $drupal_node_type, $post_id );
+				foreach( $meta_array as $key => $metadata ) {
+					$field = $metadata[1];
+					add_post_meta( $post_id, "$field", $metadata[2] );
+				}
+
+
 			} else {
 				$post_id = -2;
 			}
-		}
+		} 
+
+		return $post_id;
+
 	}
+
 
 	/**
 	 * Generates the options for WP post types
 	 *
 	 * @return Options HTML for use inside a select input type.
 	 */
-	public function d2w_migrate_post_types_options( $post_type = false ) {
+	public function d2w_migrate_post_types_options( $wp_post_type = false ) {
 
 		$types = get_post_types( );
 
 		$options = "<option value='0'>Select post type...</option>";
 
 		// Load saved node types relations
-		$node_type_par = get_option('d2w-node-types-par');
-		$type_selected = $node_type_par[$post_type];
+		$drupal_node_type_par = get_option('d2w-node-types-par');
+		$type_selected = $drupal_node_type_par[$wp_post_type];
 
 		foreach ($types as $key => $type ){
 
@@ -135,14 +159,14 @@ class d2w_Migrate_Post_Types {
 	/**
 	 * Creates list of fields related to drupal node type.
 	 *
-	 * @param $node_type: drupal node type name
+	 * @param $drupal_node_type: drupal node type name
 	 */
-	public function d2w_migrate_node_fields( $node_type ) {
+	public function d2w_migrate_node_fields( $drupal_node_type ) {
 		global $wpdb;
 
 		$out = '';
 
-		$content_type = 'content_type_'. $node_type;
+		$content_type = 'content_type_'. $drupal_node_type;
 
 		$sql = "SELECT REPLACE(COLUMN_NAME,'_value', '') field_name
 FROM INFORMATION_SCHEMA.COLUMNS 
@@ -154,7 +178,7 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 		foreach ($node_fields as $key => $field ) {
 			$fields[$field->field_name] = $field->field_name;
 
-			$out .= '<dt class="drupal-field">'. $field->field_name .'</dt><dd>Select wp field par <select class="field-option" data-post-type="fields-'. $node_type .'">'. $this->d2w_pods_fields_options( $node_type, $field->field_name) .'</select></dd><hr>';
+			$out .= '<dt class="drupal-field">'. $field->field_name .'</dt><dd>Select wp field par <select class="field-option" data-post-type="fields-'. $drupal_node_type .'">'. $this->d2w_pods_fields_options( $drupal_node_type, $field->field_name) .'</select></dd><hr>';
 		}
 
 		return '<dl>'. $out .'</dl>';
@@ -163,21 +187,21 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 	/**
 	 * Helper function: Search between Pods created fields
 	 *
-	 * @param string $post_type drupal node type
+	 * @param string $wp_post_type drupal node type
 	 * @param string $drupal_field name of the drupal field to relate with wp field
 	 *
 	 * @return options list for select field, with created field in pods plugin
 	 */
-	public function d2w_pods_fields_options( $post_type = false, $drupal_field = false ) {
+	public function d2w_pods_fields_options( $drupal_node_type = false, $drupal_field = false ) {
 		global $wpdb;
 
 		$option_html = '<option value="0">Select field...</option>';
 
 		// Load saved node types relations
 		$node_type_par = get_option('d2w-node-types-par');
-		$wp_post_type = $node_type_par[$post_type];
+		$wp_post_type = $node_type_par[$drupal_node_type];
 
-		$post_type_fields = $post_type ? 'pods_field_'. $wp_post_type : 'pods_field_';
+		$wp_post_type_fields = $wp_post_type ? 'pods_field_'. $wp_post_type : 'pods_field_';
 
 		// Load default field values from DB
 		$field_par = get_option('d2w-fields-par');
@@ -186,13 +210,13 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 		FROM wp_options 
 		WHERE option_name LIKE '%%%s%%' ";
 
-		$res = $wpdb->get_results( $wpdb->prepare( $sql, $post_type_fields ));
+		$res = $wpdb->get_results( $wpdb->prepare( $sql, $wp_post_type_fields ));
 
 		foreach( $res as $key => $data ) {
 			$option_data = unserialize( $data->option_value );
 			
 
-			if ($option_data['name'] == $field_par[$post_type][$drupal_field] ) {
+			if ($option_data['name'] == $field_par[$drupal_node_type][$drupal_field] ) {
 
 				$option_html .= '<option selected="selected" value="'. $option_data['name'] .'">'. $option_data['name'] .'</option>';
 

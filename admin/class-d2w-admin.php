@@ -147,23 +147,32 @@ class D2w_Admin {
 		
 		$action = $_POST['action_type'];
 
-		if ( $data == 'migrate-users-button' ) {
+		if ( $action == 'migrate-users' ) {
 			$out = 'button clicek was user migrate';
+			$wp_post_type = 'user';
+
+			$usersMigrate = new d2w_Migrate_Users;
+			$counter = $usersMigrate->d2w_migrate_users_action();
 		}
 
 		if ( $action == 'migrate-content' ) {
 			$drupal_type = $_POST['drupal_type'];
 			$out = 'migrate content of the type: '. $drupal_type;
+			$wp_post_type = '';
+
 
 			$migratePost = new d2w_Migrate_Post_Types;
 
-			$wp_post_type = $migratePost->d2w_migrate_content( $drupal_type, NULL,  143, 1);
+			$counter = $migratePost->d2w_migrate_content( $drupal_type );
+
+
 		}
 
 		$send_to_ajax = array(
 			'action' => $action,
 			'wp_type' => $wp_post_type,
 			'msg' => $out,
+			'response' => $counter,
 		);
 
 		echo json_encode($send_to_ajax);
@@ -230,6 +239,10 @@ class D2w_Admin {
 
 		exit;		
 
+	}
+
+	public function d2w_save_meta_options() {
+		global $post;
 	}
 
 
