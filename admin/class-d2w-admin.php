@@ -245,5 +245,37 @@ class D2w_Admin {
 		global $post;
 	}
 
+	/**
+	 * Handles Ajax Code for taxonomy migration
+	 */
+	public function d2w_migrate_tax() {
+
+		$action = $_POST['action_type'];
+
+		if ( $action == 'migrate-tax-rel' ){
+
+			$node_tax_rel = get_option('d2w-node-tax-rel');
+
+			$node_tax_rel[$_POST['drupal_type']] = $_POST['wp_tax'];
+
+			$option_saved = update_option( "d2w-node-tax-rel", $node_tax_rel );
+
+		}
+
+		if ( $action == 'migrate-tax-terms') {
+			$migrateTaxonomy = new d2w_Migrate_taxonomy;
+			$terms = $migrateTaxonomy->msa_migrate_tax( $_POST['drupal_type'], $_POST['wp_tax'] ); 
+		}
+
+		$send_to_ajax = array(
+			'action' => $action,
+			'drupal_node_type' => $_POST['drupal_type'],
+		);
+
+		echo json_encode($send_to_ajax);
+
+		exit;
+	}
+
 
 }

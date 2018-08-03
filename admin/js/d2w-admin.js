@@ -115,11 +115,58 @@
 	 		return false;
 	 	});
 
-	 	// handles relation between drupal nodes ans wp tax
-	 	$('.button-migrate-tax').click(){
-	 		alert('clicked');
+	 	// handles relation between drupal nodes ans wp tax.
+	 	$('select[data-action=select-tax-rel]').change(function(){
+
+	 		var wp_tax = $(this).val();
+	 		var drupal_node_type = $(this).attr('data-post-type');
+
+	 		var dataJSON = {
+	 			'action': 'd2w_migrate_tax_action',
+	 			//'id': $('.migrate-form').serialize(),
+	 			'drupal_type': drupal_node_type,
+	 			'wp_tax': wp_tax,
+	 			'action_type': 'migrate-tax-rel',
+	 		};
+
+	 		$.ajax({
+	 			method: "POST",
+	 			url: wp_ajax.ajax_url,
+	 			data: dataJSON,
+	 		})
+	 		.done(function( response ) {
+	 			console.log('Successful AJAX Call! /// Return Data: ' + response);
+	 			var parsed_data = JSON.parse(response);
+	 		});
+
+	 	});
+
+	 	$('.button-migrate-tax').click( function(){
+
+	 		var drupal_node_type = $(this).attr('data-post-type');
+	 		var wp_tax = $(this).prev('select').val();
+
+	 		var dataJSON = {
+	 			'action': 'd2w_migrate_tax_action',
+	 			//'id': $('.migrate-form').serialize(),
+	 			'drupal_type': drupal_node_type,
+	 			'wp_tax': wp_tax,
+	 			'action_type': 'migrate-tax-terms',
+	 		};
+
+	 		$.ajax({
+	 			method: "POST",
+	 			url: wp_ajax.ajax_url,
+	 			data: dataJSON,
+	 		})
+	 		.done(function( response ) {
+	 			console.log('Successful AJAX Call! /// Return Data: ' + response);
+	 			var parsed_data = JSON.parse(response);
+				$('input[data-post-type='+ parsed_data.drupal_node_type  +']').replaceWith('<i class="dashicons dashicons-yes"></i>');	
+	 		});	 		
+
 	 		return false;
-	 	}
+	 	});
 
 	 });
 

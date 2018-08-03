@@ -183,11 +183,17 @@ class D2w {
     $this->loader->add_action( 'wp_ajax_d2w_field_relationship_action', $plugin_admin, 'd2w_field_relationship_save' );
     $this->loader->add_action( 'wp_ajax_nopriv_d2w_field_relationship_action', $plugin_admin, 'd2w_field_relationship_save' );
 
-         /**
+    /**
      * Ajax call for creation for field pairing
      */   	
     $this->loader->add_action( 'wp_ajax_d2w_node_type_relationship_action', $plugin_admin, 'd2w_node_type_relationship_save' );
     $this->loader->add_action( 'wp_ajax_nopriv_d2w_node_type_relationship_action', $plugin_admin, 'd2w_node_type_relationship_save' );
+
+    /**
+     * Ajax call for taxonomy migration
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_migrate_tax_action', $plugin_admin, 'd2w_migrate_tax' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_tax_action', $plugin_admin, 'd2w_migrate_tax' );    
 
 	}
 

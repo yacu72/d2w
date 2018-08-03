@@ -19,6 +19,12 @@ class d2w_Migrate_taxonomy {
 
 		global $wpdb;
 
+		// Check if migartion was triggered.
+		$migration_flag = 'd2w_'. $drupal_node_type;
+		if ( get_option( $migration_flag ) ) {
+			exit;
+		}
+
 		// Migrate taxonomy terms to WP DB 
 		$sql = "SELECT DISTINCT (td.name), n.nid, v.name, td.*
 			FROM vocabulary v
@@ -38,6 +44,9 @@ class d2w_Migrate_taxonomy {
 				)
 			);
 		}
+
+		// Set the migration flag to true.
+		update_option( $migration_flag, true );
 
 		return $terms;
 	}
@@ -115,28 +124,32 @@ class d2w_Migrate_taxonomy {
 
 	/**
 	 * Drupal node Type => wp taxonomy
+	 *
+	 * @return Form that triggers the migration of node/taxonomy relation.
 	 */
 	public function d2w_drupal_node_to_tax_rel() {
+		global $wpdb;
 
-		$post_types = get_post_types(array('public' => true ), 'names');
+		$sql ="SELECT type, name 
+		FROM node_type WHERE 1";
 
-		$taxs = get_taxonomies( array('public' => true ), 'names' );
+		$res = $wpdb->get_results($sql);
 
-		// Taxonomy options
-		$options =  '<option value="0" >Select taxonomy...</option>';
-		foreach($taxs as $tax) {
-			$options .= '<option value='. $tax .'>'. $tax .'</option>';
+		foreach( $res as $key => $data) {
+			$type = $data->type;
+			$drupal_node_types[$type] = $data->name;
 		}
 
+		// HTML From for migration.
 		$out = '<form>';
 
-		foreach($post_types as $post) {
+		foreach($drupal_node_types as $type => $name) {
 
-			$out .= '<label> '. $post .' </label>';
-			$out .= '<select data-post-type="'. $post .'" data-action="select-tax-rel">';
-			$out .= $options;
+			$out .= '<label> '. $name .' </label>';
+			$out .= '<select data-post-type="'. $type .'" data-action="select-tax-rel">';
+			$out .= $this->d2w_tax_options( $type );
 			$out .= '</select>';
-			$out .= '<input class="button button-migrate-tax" type="submit" data-action="migrate-tax-rel" value="Migrate Taxonomy" >';
+			$out .= ( !get_option( 'd2w_'. $type ) ) ? '<input data-post-type="'. $type .'" class="button button-migrate-tax" type="submit" data-action="migrate-tax-terms" value="Migrate Terms" >' : '<i class="dashicons dashicons-yes"></i>';
 			$out .= '<hr>';
 
 		}
@@ -147,41 +160,27 @@ class d2w_Migrate_taxonomy {
 
 	}
 
-	/**
-	 * Helper function extract taxonomy created with pods plugin.
-	 */
-	public function d2w_pods_taxonomies( $wp_post_type = NULL ) {
-		$pods_tax_data = get_option('_transient_pods_pods_get_type_taxonomy-2.7.1');
+	public function d2w_tax_options( $drupal_node_type ) {
 
-		$post_types = get_post_types(array('public' => true ), 'names');
+		// Load default values for options
+		$node_tax_rel = get_option('d2w-node-tax-rel');
+
+		$current_type = $node_tax_rel[$drupal_node_type];
 
 		$taxs = get_taxonomies( array('public' => true ), 'names' );
 
-		print '<pre>';
-		print_r( $taxs );
-		print '</pre>';
-
-		print_r($post_types);
-
-
-		foreach ( $pods_tax_data as $tax_id => $tax_data ){
-		print '<pre>';
-		//print_r($tax_data);
-		print '</pre>';
-			$tax_name[$tax_data['id']] = $tax_data['name'];
-
-			foreach($post_types as $post_type) {
-				$post_key = 'built_in_post_types_'. $post_type;
-				if ( $tax_data['options'][$post_key] == 1 ){
-					$post_related[] = $post_type;
-				}
+		// Taxonomy options
+		$options =  '<option value="0" >Select taxonomy...</option>';
+		foreach($taxs as $tax) {
+			if ( $current_type == $tax ){
+				$options .= '<option selected="selected" value='. $tax .'>'. $tax .'</option>';
+			} else {
+				$options .= '<option value='. $tax .'>'. $tax .'</option>';
 			}
 		}
 
-		print_r($post_related);
-		print_r( $tax_name );
-	}
+		return $options;
 
-	
+	}
 
 }
