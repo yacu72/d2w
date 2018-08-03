@@ -22,17 +22,18 @@
 	/**
 	 * This form hold's all the calls related to migration functions.
 	 */
+
 		$migrateUsers = new d2w_Migrate_Users;
+
 		$migratePost = new d2w_Migrate_Post_Types;
-		//$types_options = $migratePost->d2w_migrate_post_types_options();
 
 		$drupal_node_types = $migratePost->d2w_migrate_drupal_node_types_list();
-		//$migratePost->d2w_migrate_content( 'moflow_faq');
 
 		$migrateFields = new d2w_Migrate_Post_fields;
 
 		$migrateTax = new d2w_Migrate_taxonomy;
 
+		$migrateComments = new d2w_Migrate_Comments;
 
 	?>
 
@@ -125,21 +126,40 @@
 
 											<?php echo get_option( 'd2w_'. $type .'_migrated' ) .' '. $type; ?> Migrated. <i class="dashicons dashicons-yes"></i>
 
-											<h3>Migrate Post Terms</h3>
-
-											<?php if( !get_option('d2w_'. $type .'_post_terms_migrated') ) { ?>
-
-												<input data-action="migrate-post-terms" data-drupal-type="<?php echo $type; ?>" class="buttton button-migrate" type="submit" value="Migrate Terms" > 
-
-											<?php } else { ?>
-
-												<?php echo get_option('d2w_'. $type .'_post_terms_migrated'); ?> Post Terms Migrated.<i class="dashicons dashicons-yes"></i> 
-
-											<?php } ?>
-
 										<?php } ?>
+										<hr>
+										<?php 
+										/**
+							       * MIGRATE POST TERMS 
+							       */
+										?>
+										<h3>Migrate Post Terms</h3>
 
-										<!--<div data-spinner="spinner-<?php echo $type; ?>" class="spinner"></div>-->
+										<?php if( !get_option('d2w_'. $type .'_post_terms_migrated') ) { ?>
+
+											<input data-action="migrate-post-terms" data-drupal-type="<?php echo $type; ?>" class="buttton button-migrate" type="submit" value="Migrate Terms" > 
+
+										<?php } else { ?>
+
+											<?php echo get_option('d2w_'. $type .'_post_terms_migrated'); ?> Post Terms Migrated.<i class="dashicons dashicons-yes"></i> 
+
+										<?php } ?>										
+										<hr>
+										<?php
+											/**
+								       * MIGRATE POST COMMENTS
+								       */
+										?>
+										<h3>Migrate Post Comments</h3>
+										<?php if( !get_option('d2w_'. $type .'_comments_migrated') ) { ?>
+
+											<input data-action="migrate-post-comments" data-drupal-type="<?php echo $type; ?>" class="buttton button-migrate" type="submit" value="Migrate Comments" > 
+
+										<?php } else { ?>
+
+											<?php echo get_option('d2w_'. $type .'_comments_migrated'); ?> Comments Migrated.<i class="dashicons dashicons-yes"></i> 
+
+										<?php } ?>										
 
 									</div>
 								</div>	

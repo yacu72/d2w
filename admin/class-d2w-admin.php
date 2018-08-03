@@ -146,36 +146,44 @@ class D2w_Admin {
 	public function d2w_migrate_page_handler() {
 		
 		$action = $_POST['action_type'];
+		$drupal_type = $_POST['drupal_type'];
+		$wp_post_type = '';
 		$counter = '';
 
 		if ( $action == 'migrate-users' ) {
-			$out = 'button clicek was user migrate';
-			$wp_post_type = 'user';
 
 			$usersMigrate = new d2w_Migrate_Users;
 			$counter = $usersMigrate->d2w_migrate_users_action();
+
+			$out = 'button clicek was user migrate';
+			$wp_post_type = 'user';
 
 		}
 
 		if ( $action == 'migrate-content' ) {
 
-			$drupal_type = $_POST['drupal_type'];
-			$out = 'migrate content of the type: '. $drupal_type;
-			$wp_post_type = '';
-
 			$migratePost = new d2w_Migrate_Post_Types;
 			$counter = $migratePost->d2w_migrate_content( $drupal_type );
+			
+			$out = 'migrate content of the type: '. $drupal_type;			
 
 		}
 
 		if ( $action == 'migrate-post-terms') {
 
 			$migrateTaxonomy = new d2w_Migrate_taxonomy;
+			$counter = $migrateTaxonomy->msa_migrate_tax_to_posts( $drupal_type, '', 475 );
 
-			$drupal_type = $_POST['drupal_type'];
-			$wp_post_type = '';
-			$counter = $migrateTaxonomy->msa_migrate_tax_to_posts( $drupal_type );
 			$out = 'migration of post terms';
+
+		}
+
+		if ( $action == 'migrate-post-comments') {
+
+			$migrateComments = new d2w_Migrate_Comments;
+			$counter = $migrateComments->d2w_migrate_post_comments( $drupal_type );
+
+			$out = 'Migrating Comments';
 		}
 
 		$send_to_ajax = array(
