@@ -99,6 +99,9 @@ class d2w_Migrate_Post_Types {
 					add_post_meta( $post_id, "$field", $metadata[2] );
 				}
 
+				// Set the migration flag to true.
+				update_option( 'd2w_'. $drupal_node_type .'_migrated', true );
+
 
 			} else {
 				$post_id = -2;

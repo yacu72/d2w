@@ -23,7 +23,7 @@ class d2w_Migrate_Post_fields extends  d2w_Migrate_Post_Types {
 
 		$drupal_node_type_row = 'content_type_'. $drupal_node_type;
 
-		$inner_join = "INNER JOIN $drupal_node_type_row  dnt ON dnt.vid = n.nid ";
+		$inner_join = "INNER JOIN $drupal_node_type_row  dnt ON dnt.vid = n.vid ";
 
 		$sql = "SELECT dnt.*, p.ID
 		FROM node n 

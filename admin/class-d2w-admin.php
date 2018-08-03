@@ -146,6 +146,7 @@ class D2w_Admin {
 	public function d2w_migrate_page_handler() {
 		
 		$action = $_POST['action_type'];
+		$counter = '';
 
 		if ( $action == 'migrate-users' ) {
 			$out = 'button clicek was user migrate';
@@ -173,6 +174,7 @@ class D2w_Admin {
 			'wp_type' => $wp_post_type,
 			'msg' => $out,
 			'response' => $counter,
+			'drupal_node_type' => $_POST['drupal_type'],
 		);
 
 		echo json_encode($send_to_ajax);

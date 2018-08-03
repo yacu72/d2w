@@ -124,8 +124,12 @@
 												<option value="full_wuestion">full_question</option>
 											</select>
 										</dd>-->
-
-										<input data-action="migrate-content" data-drupal-type="<?php echo $type; ?>" class="button button-migrate" type="submit" value="Migrate <?php echo $name; ?>" >	
+										<?php if ( !get_option( 'd2w_'. $type .'_migrated' )  ) { ?>
+											<input data-action="migrate-content" data-drupal-type="<?php echo $type; ?>" class="button button-migrate" type="submit" value="Migrate <?php echo $name; ?>" >	
+										<?php } else { ?>
+											<i class="dashicons dashicons-yes"></i>'
+										<?php } ?>
+										<div data-spinner="spinner-<?php echo $type; ?>" class="spinner"></div>
 									</div>
 								</div>	
 

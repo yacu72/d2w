@@ -29,7 +29,7 @@
 	 * practising this, we should strive to set a better example in our own work .
 	 */
 	 $(document).ready(function() {
-
+		
 	 	// Open and close postbox divs in admin area.
     $('.handlediv').click(function () {
         $(this).parent().toggleClass("closed").addClass('postbox');
@@ -95,6 +95,9 @@
 	 		var drupal_type = $(this).attr('data-drupal-type');
 	 		var action = $(this).attr('data-action');
 
+	 		// Loader gif
+	 		$(this).val('Migrating...').after('<div style="float:none" data-spinner="'+ drupal_type +'" class="spinner is-active"></div>');
+
 	 		var dataJSON = {
 	 			'action': 'd2w_migrate_page_action',
 	 			//'id': $('.migrate-form').serialize(),
@@ -109,7 +112,10 @@
 	 		})
 	 		.done(function( response ) {
 	 			console.log('Successful AJAX Call! /// Return Data: ' + response);
-
+	 			var parsed_data = JSON.parse(response);
+	 			//$('div[data-spinner="spinner-'+ parsed_data.drupal_node_type +'"]').removeClass('is-active');
+	 			$('div[data-spinner="'+ parsed_data.drupal_node_type +'"]').hide();
+	 			$('input[data-drupal-type='+ parsed_data.drupal_node_type  +']').replaceWith('<i class="dashicons dashicons-yes"></i>');
 	 		});
 
 	 		return false;
