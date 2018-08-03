@@ -117,19 +117,30 @@
 										<h3>Map fields:</h3>
 										<?php echo $migratePost->d2w_migrate_node_fields( $type ); ?>		
 										
-										<!--<dt>Node type Fields</dt>
-										<dd>
-											<select class="select-field-par">
-												<option value="0">Select field...</option>
-												<option value="full_wuestion">full_question</option>
-											</select>
-										</dd>-->
 										<?php if ( !get_option( 'd2w_'. $type .'_migrated' )  ) { ?>
+
 											<input data-action="migrate-content" data-drupal-type="<?php echo $type; ?>" class="button button-migrate" type="submit" value="Migrate <?php echo $name; ?>" >	
+
 										<?php } else { ?>
-											<i class="dashicons dashicons-yes"></i>'
+
+											<?php echo $type; ?> Migrated. <i class="dashicons dashicons-yes"></i>
+
+											<h3>Migrate Taxonomy Terms</h3>
+
+											<?php if( !get_option('d2w_'. $type .'_post_terms_migrated') ) { ?>
+
+												<input data-action="migrate-post-terms" data-drupal-type="<?php echo $type; ?>" class="buttton button-migrate" type="submit" value="Migrate Terms" > 
+
+											<?php } else { ?>
+
+												<?php echo get_option('d2w_'. $type .'_post_terms_migrated'); ?> Post Terms Migrated.<i class="dashicons dashicons-yes"></i> 
+
+											<?php } ?>
+
 										<?php } ?>
-										<div data-spinner="spinner-<?php echo $type; ?>" class="spinner"></div>
+
+										<!--<div data-spinner="spinner-<?php echo $type; ?>" class="spinner"></div>-->
+
 									</div>
 								</div>	
 

@@ -36,7 +36,7 @@ class d2w_Migrate_taxonomy {
 		$terms = $wpdb->get_results($wpdb->prepare($sql, $drupal_node_type));
 
 		foreach ($terms as $key => $term) {
-			$new_term = wp_insert_term(
+			$new_term[] = wp_insert_term(
 				$term->name,
 				$taxonomy,
 				array(
@@ -46,9 +46,7 @@ class d2w_Migrate_taxonomy {
 		}
 
 		// Set the migration flag to true.
-		update_option( $migration_flag, true );
-
-		return $terms;
+		update_option( $migration_flag, count( $new_term ) );
 	}
 
 	/**
@@ -59,9 +57,18 @@ class d2w_Migrate_taxonomy {
 	 * @param (array) Optional parameter. This parameter allow us to filter the sql for specific values. In this case, the filter can limit the query to specific values of the old node's nid. Helpful in preparation phase for the migration.
 	 *	 
 	 */
-	public function msa_migrate_tax_to_posts( $wp_post_type, $taxonomy, $range = NULL) {
+	public function msa_migrate_tax_to_posts( $drupal_node_type = NULL , $wp_post_type = NULL, $taxonomy = NULL, $range = NULL) {
 
 		global $wpdb;
+
+		// Load WP Post Type/Taxonomy relation.
+		$tax = get_option('d2w-node-tax-rel');
+		$taxonomy = $tax[ $drupal_node_type ];
+
+		// Load WP Post Type related to Drupal Node Type.
+		$types_rel= get_option( 'd2w-node-types-par' );
+		$wp_post_type = $types_rel[ $drupal_node_type ];
+
 
 		$query_vars = array($wp_post_type, 'publish');
 
@@ -116,8 +123,10 @@ class d2w_Migrate_taxonomy {
 			}
 
 			foreach ($out as $post_id => $post_terms) {
-				$term = wp_set_post_terms( $post_id, $post_terms, $taxonomy );
+				$term[] = wp_set_post_terms( $post_id, $post_terms, $taxonomy );
 			}
+
+			update_option( 'd2w_'. $drupal_node_type .'_post_terms_migrated', count( $term ) );
 
 			return $term;		
 	}

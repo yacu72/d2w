@@ -154,19 +154,28 @@ class D2w_Admin {
 
 			$usersMigrate = new d2w_Migrate_Users;
 			$counter = $usersMigrate->d2w_migrate_users_action();
+
 		}
 
 		if ( $action == 'migrate-content' ) {
+
 			$drupal_type = $_POST['drupal_type'];
 			$out = 'migrate content of the type: '. $drupal_type;
 			$wp_post_type = '';
 
-
 			$migratePost = new d2w_Migrate_Post_Types;
-
 			$counter = $migratePost->d2w_migrate_content( $drupal_type );
 
+		}
 
+		if ( $action == 'migrate-post-terms') {
+
+			$migrateTaxonomy = new d2w_Migrate_taxonomy;
+
+			$drupal_type = $_POST['drupal_type'];
+			$wp_post_type = '';
+			$counter = $migrateTaxonomy->msa_migrate_tax_to_posts( $drupal_type );
+			$out = 'migration of post terms';
 		}
 
 		$send_to_ajax = array(

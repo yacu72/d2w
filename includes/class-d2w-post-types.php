@@ -20,6 +20,8 @@ class d2w_Migrate_Post_Types {
 
 		global $wpdb;
 
+		$i = 0;
+
 		// Load saved node types relations
 		$node_type_par = get_option('d2w-node-types-par');
 		$wp_post_type = $node_type_par[$drupal_node_type];		
@@ -89,7 +91,9 @@ class d2w_Migrate_Post_Types {
 				// save original id in new register for future reference
 				$wpdb->update($wpdb->posts, array('old_ID' => $node->nid), array('ID' => $post_id));
 
-
+				if ( is_numeric( $post_id )) {
+					$i++;
+				}
 
 				// Save fields values
 				$migrateFields = new d2w_Migrate_Post_fields;
@@ -100,7 +104,7 @@ class d2w_Migrate_Post_Types {
 				}
 
 				// Set the migration flag to true.
-				update_option( 'd2w_'. $drupal_node_type .'_migrated', true );
+				update_option( 'd2w_'. $drupal_node_type .'_migrated', $i );
 
 
 			} else {
