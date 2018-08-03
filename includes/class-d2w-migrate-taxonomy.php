@@ -158,7 +158,7 @@ class d2w_Migrate_taxonomy {
 			$out .= '<select data-post-type="'. $type .'" data-action="select-tax-rel">';
 			$out .= $this->d2w_tax_options( $type );
 			$out .= '</select>';
-			$out .= ( !get_option( 'd2w_'. $type .'_terms_migrated' ) ) ? '<input data-post-type="'. $type .'" class="button button-migrate-tax" type="submit" data-action="migrate-tax-terms" value="Migrate Terms" >' : '<i class="dashicons dashicons-yes"></i>';
+			$out .= ( !get_option( 'd2w_'. $type .'_terms_migrated' ) ) ? '<input data-post-type="'. $type .'" class="button button-migrate-tax" type="submit" data-action="migrate-tax-terms" value="Migrate Terms" >' : ' '. get_option( 'd2w_'. $type .'_terms_migrated' ) .' taxonomy terms migrated <i class="dashicons dashicons-yes"></i>';
 			$out .= '<hr>';
 
 		}

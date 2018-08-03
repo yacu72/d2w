@@ -123,9 +123,9 @@
 
 										<?php } else { ?>
 
-											<?php echo $type; ?> Migrated. <i class="dashicons dashicons-yes"></i>
+											<?php echo get_option( 'd2w_'. $type .'_migrated' ) .' '. $type; ?> Migrated. <i class="dashicons dashicons-yes"></i>
 
-											<h3>Migrate Taxonomy Terms</h3>
+											<h3>Migrate Post Terms</h3>
 
 											<?php if( !get_option('d2w_'. $type .'_post_terms_migrated') ) { ?>
 
