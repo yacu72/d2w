@@ -117,6 +117,7 @@
 
 										<h3>Map fields:</h3>
 										<?php echo $migratePost->d2w_migrate_node_fields( $type ); ?>		
+										<hr>
 										
 										<?php if ( !get_option( 'd2w_'. $type .'_migrated' )  ) { ?>
 
@@ -150,7 +151,7 @@
 								       * MIGRATE POST COMMENTS
 								       */
 										?>
-										<h3>Migrate Post Comments</h3>
+										<h3>Migrate Post Comments - <?php echo $migrateComments->d2w_comments_counter( $type ); ?></h3>
 										<?php if( !get_option('d2w_'. $type .'_comments_migrated') ) { ?>
 
 											<input data-action="migrate-post-comments" data-drupal-type="<?php echo $type; ?>" class="buttton button-migrate" type="submit" value="Migrate Comments" > 

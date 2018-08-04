@@ -75,9 +75,47 @@ class d2w_Migrate_Comments {
 
 		}
 
-		update_option('d2w_'. $drupal_post_type .'_comments_migrated', count( $comment_id ) );
+		update_option('d2w_'. $drupal_node_type .'_comments_migrated', count( $comment_id ) );
 
 		return count( $comment_id );
+	}
+
+	/**
+	 * Counter of coments to migrate.
+	 *
+	 * @return (int) Total number of comments to migrate.
+	 */
+	public function d2w_comments_counter( $drupal_node_type = NULL, $wp_post_type = NULL ) {
+
+		global $wpdb;
+
+		$count = array();
+
+		$sql_and = ''; // removes comments with external links, most of them are spam.
+
+		if ( $drupal_node_type  ) {
+
+			$node_par = get_option('d2w-node-types-par');
+			$index = isset( $node_par[ $drupal_node_type ] ) ? $node_par[ $drupal_node_type ] : '';
+			$wp_post_type = $index;
+
+		}	
+		
+		$sql_and = " AND c.homepage = '' ";
+
+		$sql_comments = "SELECT *
+			FROM comments c
+			INNER JOIN wp_posts wpp ON c.nid = wpp.old_ID
+			WHERE wpp.post_type = %s $sql_and";
+
+		$res_comments = $wpdb->get_results($wpdb->prepare($sql_comments, $wp_post_type));
+
+		foreach ( $res_comments as $key => $comment) {
+			$count[] = $comment->cid;
+		}
+
+		return count( $count );
+
 	}
 
 

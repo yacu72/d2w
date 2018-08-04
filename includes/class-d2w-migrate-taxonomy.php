@@ -174,7 +174,9 @@ class d2w_Migrate_taxonomy {
 		// Load default values for options
 		$node_tax_rel = get_option('d2w-node-tax-rel');
 
-		$current_type = $node_tax_rel[$drupal_node_type];
+		$index = isset($node_tax_rel[$drupal_node_type]) ? $node_tax_rel[$drupal_node_type] : ''; // fix notice warnings
+
+		$current_type = $index;
 
 		$taxs = get_taxonomies( array('public' => true ), 'names' );
 

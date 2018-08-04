@@ -115,7 +115,7 @@
 	 			var parsed_data = JSON.parse(response);
 	 			//$('div[data-spinner="spinner-'+ parsed_data.drupal_node_type +'"]').removeClass('is-active');
 	 			$('div[data-spinner="'+ parsed_data.drupal_node_type +'"]').hide();
-	 			$('input[data-drupal-type='+ parsed_data.drupal_node_type  +']').replaceWith('<i class="dashicons dashicons-yes"></i>');
+	 			$('input[data-drupal-type='+ parsed_data.drupal_node_type  +']').replaceWith( parsed_data.response +' <i class="dashicons dashicons-yes"></i>');
 	 		});
 
 	 		return false;

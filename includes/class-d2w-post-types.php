@@ -206,7 +206,8 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 
 		// Load saved node types relations
 		$node_type_par = get_option('d2w-node-types-par');
-		$wp_post_type = $node_type_par[$drupal_node_type];
+		$index = isset( $node_type_par[$drupal_node_type] ) ? $node_type_par[$drupal_node_type] : '';
+		$wp_post_type = $index;
 
 		$wp_post_type_fields = $wp_post_type ? 'pods_field_'. $wp_post_type : 'pods_field_';
 
@@ -222,14 +223,16 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 		foreach( $res as $key => $data ) {
 			$option_data = unserialize( $data->option_value );
 			
+			$index = isset( $field_par[$drupal_node_type][$drupal_field] ) ? $field_par[$drupal_node_type][$drupal_field] : '';
+			$option_index = isset($option_data['name']) ? $option_data['name'] : '';// fix notice warnings messages 
 
-			if ($option_data['name'] == $field_par[$drupal_node_type][$drupal_field] ) {
+			if ($option_index == $index ) {
 
-				$option_html .= '<option selected="selected" value="'. $option_data['name'] .'">'. $option_data['name'] .'</option>';
+				$option_html .= '<option selected="selected" value="'. $option_index .'">'. $option_index .'</option>';
 
 			} else {
 
-				$option_html .= '<option value="'. $option_data['name'] .'">'. $option_data['name'] .'</option>';
+				$option_html .= '<option value="'. $option_index .'">'. $option_index .'</option>';
 			}			
 		}
 
