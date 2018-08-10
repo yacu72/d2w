@@ -185,7 +185,7 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 		foreach ($node_fields as $key => $field ) {
 			$fields[$field->field_name] = $field->field_name;
 
-			$out .= '<dt class="drupal-field">'. $field->field_name .'</dt><dd>Select wp field par <select class="field-option" data-post-type="fields-'. $drupal_node_type .'">'. $this->d2w_pods_fields_options( $drupal_node_type, $field->field_name) .'</select></dd><hr>';
+			$out .= '<dt class="drupal-field">'. $field->field_name .'</dt><dd>Select wp field par <select class="field-option" data-post-type="fields-'. $drupal_node_type .'">'. $this->d2w_beta_pods_fields_options( $drupal_node_type, $field->field_name) .'</select></dd><hr>';
 		}
 
 		return '<dl>'. $out .'</dl>';
@@ -234,6 +234,52 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 
 				$option_html .= '<option value="'. $option_index .'">'. $option_index .'</option>';
 			}			
+		}
+
+		return $option_html;
+	}
+
+	/**
+	 * Beta test for types fields code
+	 */
+	public function d2w_beta_pods_fields_options( $drupal_node_type = false, $drupal_field = false ) {
+		global $wpdb;
+
+		$option_html = '<option value="0">Select fields...</option>';
+
+		// Load saved node types relations
+		$node_type_par = get_option('d2w-node-types-par');
+		$index = isset( $node_type_par[$drupal_node_type] ) ? $node_type_par[$drupal_node_type] : '';
+		$wp_post_type = $index;
+
+		$wp_post_type_fields = $wp_post_type ? 'pod_'. $wp_post_type : 'pods_field_';
+
+		// Load default field values from DB
+		$field_par = get_option('d2w-fields-par');
+
+		$sql = "SELECT *
+		FROM wp_options 
+		WHERE option_name LIKE '%%%s%%' ";
+
+		$res = $wpdb->get_results( $wpdb->prepare( $sql, $wp_post_type_fields ));
+
+		foreach( $res as $key => $data ) {
+			$option_data = unserialize( $data->option_value );
+			
+			$index = isset( $field_par[$drupal_node_type][$drupal_field] ) ? $field_par[$drupal_node_type][$drupal_field] : '';
+			$option_index = isset($option_data['name']) ? $option_data['name'] : '';// fix notice warnings messages 
+
+			foreach ( $option_data['fields'] as $field_type => $field_data ) {
+
+				if ($field_type == $index ) {
+
+					$option_html .= '<option selected="selected" value="'. $field_type .'">'. $field_type .'</option>';
+
+				} else {
+
+					$option_html .= '<option value="'. $field_type.'">'. $field_type .'</option>';
+				}	
+			}		
 		}
 
 		return $option_html;
