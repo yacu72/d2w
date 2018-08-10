@@ -125,11 +125,14 @@ class D2w {
 		/**
 		 * Load custom clases with migrate functions
 		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-settings.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate_Users.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-post-types.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-post-fields.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-taxonomy.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-comments.php';		
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-comments.php';	
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-d2w-migrate-images.php';
+
 
 		$this->loader = new D2w_Loader();
 
@@ -173,7 +176,7 @@ class D2w {
   	$this->loader->add_action( 'save_post', $plugin_admin, 'd2w_save_meta_options' );
 
     /**
-     * Ajax call for migrate ppages post type
+     * Ajax call for migrate pages post type
      */
     $this->loader->add_action( 'wp_ajax_d2w_migrate_page_action', $plugin_admin, 'd2w_migrate_page_handler' );
     $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_page_action', $plugin_admin, 'd2w_migrate_page_handler' ); 
@@ -195,6 +198,18 @@ class D2w {
      */   	
     $this->loader->add_action( 'wp_ajax_d2w_migrate_tax_action', $plugin_admin, 'd2w_migrate_tax' );
     $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_tax_action', $plugin_admin, 'd2w_migrate_tax' );    
+
+    /**
+     * Ajax call for migration settings
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_migrate_settings_action', $plugin_admin, 'd2w_migrate_settings_handler' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_settings_action', $plugin_admin, 'd2w_migrate_settings_handler' ); 
+
+    /**
+     * Ajax call for migration of Images
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_migrate_images_action', $plugin_admin, 'd2w_migrate_images_handler' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_images_action', $plugin_admin, 'd2w_migrate_images_handler' ); 
 
 	}
 

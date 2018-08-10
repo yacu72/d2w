@@ -141,6 +141,26 @@ class D2w_Admin {
 	}
 
 	/**
+	 * Ajax procress for migration settings
+	 */
+	public function d2w_migrate_settings_handler() {
+
+		$d2wSettings = $_POST['d2wSettings'];
+
+		update_option('d2w_migrate_settings', $d2wSettings);
+
+
+		$send_to_ajax = array(
+			'd2wSettings' => $d2wSettings,
+			'test' => $save,
+		);
+
+		echo json_encode($send_to_ajax);
+
+		exit;		
+	}
+
+	/**
 	 * Ajax process for page migration
 	 */
 	public function d2w_migrate_page_handler() {
@@ -184,6 +204,14 @@ class D2w_Admin {
 			$counter = $migrateComments->d2w_migrate_post_comments( $drupal_type );
 
 			$out = 'Migrating Comments';
+		}
+
+		if ( $action == 'migrate-post-images') {
+			$migrateImages = new d2w_Migrate_Images;
+			$images = $migrateImages->d2w_migrate_images_loader( $drupal_type );
+			$counter = $images['post']['counter'];
+
+			$out = "migration of images";
 		}
 
 		$send_to_ajax = array(
@@ -292,6 +320,79 @@ class D2w_Admin {
 		);
 
 		echo json_encode($send_to_ajax);
+
+		exit;
+	}
+
+	/**
+	 * Handles Ajax Image Migration
+	 */
+	public function d2w_migrate_images_handler() {
+
+		$drupal_node_type = $_POST['drupal_type'];
+		$size_limit = $_POST['size_limit'] * 1000000; /* covert MB to kb*/
+		
+
+		$migrateImages = new d2w_Migrate_Images;
+
+		// Saves batches size for images to import.
+		$size_updated = update_option( 'd2w_size_limit_'. $drupal_node_type, $size_limit );
+
+		$images_info = $migrateImages->d2w_migrate_images_info( $drupal_node_type, '', $size_limit );
+
+		
+
+		// Renders HTML list for batch migration.
+		$html = $migrateImages->d2w_batch_migration_display( '', $drupal_node_type);
+
+		$send_to_ajax = array(
+			'drupal_type' => $drupal_node_type,
+			'size_updated' => $size_updated,
+			'total_size' => $images_info['total_size'],
+			'html' => $html,
+		);		
+
+		if ( $_POST['data_action'] == 'migrate-image-group' ){
+			$group_id = $_POST['group_id']; // Batch group ID to migrate.
+
+			// Load path to image to download.
+			$migrate_settings = get_option( 'd2w_migrate_settings' );
+			foreach ($migrate_settings as $key => $data ) {
+				if ( $data[0] == 'images-url' ) {
+					$image_path = $data[1];
+				}
+			}			
+
+			$images = get_option('d2w_'. $drupal_node_type .'_images_import');
+
+			foreach( $images[$group_id] as $index => $image ){
+
+				// TODO. do this replace more generic, maybe adding something in settings section.
+				$path = str_replace( 'sites/dev.medstudentadvisors.do5.mflw.us/files', 'sites/medstudentadvisors.com/files', $image['path'] );
+
+
+				$migrateImages->d2w_migrate_image( '' , $image_path .'/'. $path, $image['ID'] );
+
+				$migrateImages->d2w_image_content_filter( $image['ID'] );
+
+				$paths .= $path .', ';
+
+				$parents .= $image['ID'] .', ';
+
+			}			
+
+			$send_to_ajax = array(
+				'drupal_type' => $drupal_node_type,
+				'group_id' => $group_id,
+				'paths' => $paths,
+				'parents' => $parents,
+			);
+
+		}
+
+
+
+		echo json_encode( $send_to_ajax );
 
 		exit;
 	}

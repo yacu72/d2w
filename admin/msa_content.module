@@ -1,0 +1,1111 @@
+<?php
+//$Id$
+
+/**
+ * Implementation of hook_menu().
+ * Builds static path to render content.
+*/
+function msa_content_menu() {
+  
+  $items[] = array(
+    'path' => 'clients',
+    'callback' => 'msa_content_user_lists',
+    'access' => user_access('Update client step'),
+   );
+  
+  $items[] = array(
+    'path' => 'clients/2018/0/filter',
+    'title' => t('Ordered by year and step'),
+    'weight' => -5,
+    'callback' => 'msa_content_user_lists',
+    'access' => user_access('Update client step'),
+   );
+   
+  $items[] = array(
+    'path' => 'clients/search',
+    'title' => t('Search by Email, Phone or Surname'),
+    'weight' => -4,
+    'callback' => 'msa_content_user_search_page',
+    'access' => user_access('Update client step'),
+   );
+   
+  $items[] = array(
+    'path' => 'clients/new',
+    'title' => t('Ordered by newest'),
+    'weight' => -3,
+    'callback' => 'msa_content_user_lists',
+    'access' => user_access('Update client step'),
+   );
+   
+  $items[] = array(
+    'path' => 'clients/recent',
+    'title' => t('Ordered by recent logins'),
+    'weight' => -2,
+    'callback' => 'msa_content_user_lists',
+    'access' => user_access('Update client step'),
+   );
+  
+  $items[] = array(
+    'path' => 'admin/user/user',
+    'title' => t('Default List'),
+    'weight' => -1,
+    'access' => user_access('Update client step'),
+   );
+   
+  $items[] = array(
+    'path' => 'admin/users/xuser',
+    'title' => t('Advanced Filters'),
+    'weight' => 0,
+    'access' => user_access('Update client step'),
+  );
+   
+  $items[] = array(
+    'path' => 'mydocs',
+    'title' => t('User Documents'),
+    'callback' => 'msa_content_user_docs',
+    'access' => user_access('access content'),
+    'type' => MENU_CALLBACK
+  );
+
+  $items[] = array(
+    'path' => 'docs',
+    'title' => t('Recent Documents'),
+    'callback' => 'msa_content_user_docs',
+    'access' => user_access('access content'),
+    'type' => MENU_CALLBACK
+  );  
+  
+  $items[] = array(
+    'path' => 'invoices',
+    'title' => t('Invoices'),
+    'callback' => 'msa_content_financial',
+    'access' => user_access('Update client step'),
+  );
+  
+  $items[] = array(
+    'path' => 'updated-pages',
+    'title' => t('Updated Content'),
+    'callback' => 'msa_content_new_content',
+    'access' => user_access('Update client step'),
+  );
+  
+  $items[] = array(
+    'path' => 'clients/autocomplete/mail',
+    'callback' => 'msa_content_user_search',
+    'access' => user_access('Update client step'),
+    'type' => MENU_CALLBACK
+  );
+  $items[] = array(
+    'path' => 'clients/autocomplete/surname',
+    'callback' => 'msa_content_user_search',
+    'access' => user_access('Update client step'),
+    'type' => MENU_CALLBACK
+  );
+  $items[] = array(
+    'path' => 'clients/autocomplete/phone',
+    'callback' => 'msa_content_user_search',
+    'access' => user_access('Update client step'),
+    'type' => MENU_CALLBACK
+  );
+  
+  //hook_menu Ajax comments path
+  $items[] = array(
+    'path' => 'add/comment',
+    'title' => 'Add Comment',
+    'callback' => 'msa_content_add_comment',
+    'callback arguments' => array(),
+    'access' => user_access("post comments"),
+    'type' => MENU_CALLBACK,
+  );  
+
+  //hook_menu client info modal data 
+  $items[] = array(
+    'path' => 'client-info',
+    'callback' => 'msa_content_client_info',
+    'access' => user_access('Update client step'),
+    'type' => MENU_CALLBACK
+  );
+
+   return $items;
+}
+
+/*
+* auxiliar function to save comments from an ajax call.
+*/
+function msa_content_add_comment() {
+
+  $node = node_load($_REQUEST['nid']);
+
+  global $user;
+  $text = $_REQUEST['text'];
+
+  //Avoid duplicate comment
+  $sql = "SELECT *
+FROM {comments}
+WHERE nid = %d
+ORDER BY timestamp DESC
+LIMIT 1 ";
+
+  $result  = db_fetch_object(db_query($sql, $_REQUEST['nid']));
+
+  $comment = array();
+  $comment['uid'] = $user->uid;
+  $comment['nid'] = $_REQUEST['nid'];
+  $comment['pid'] = 0;
+  $comment['subject'] = substr($text, 0, 20);
+  $comment['comment'] = $text;
+
+  //cck fields. Needed for tickets comment form in modals
+  if ($node->type == 'lightcrm') {
+    $assigned_uid = $node->field_assigned_to[0]['uid'];
+    $assigned_user = user_load(array('uid' => $assigned_uid));  
+    $comment['comment_cck'] = array();
+    $comment['comment_cck']['field_status_0']['key'] = $node->field_status_0[0]['value']; 
+    $comment['comment_cck']['field_assigned_to']['0']['user_name'] = $assigned_user->name;
+    $comment['comment_cck']['field_priority']['key'] = $node->field_priority[0]['value'];
+  }  
+
+  // Add comment to DB
+  if ($result->comment != $text) {
+    $cid = comment_save($comment);
+  }  
+
+  // Mark the node as viewed by the user
+  node_tag_new($comment['nid']);
+
+  // Get all comments since the last one
+  $fromcid = isset($_REQUEST['lastcid'])? $_REQUEST['lastcid'] : 0;
+  print _msa_content_get_latest_comments($comment['nid'], $fromcid);
+
+  $messages = drupal_get_messages('status');
+
+  exit;
+}
+/*
+* helper function for ajax comment code.
+*/
+function _msa_content_get_latest_comments($nid, $fromcid) {
+  $result = db_query('select * from comments where nid = %d and cid > %d', $nid, $fromcid);
+  $content = '';
+  while ($comment = db_fetch_object($result)) {
+    if ($comment->status == COMMENT_NOT_PUBLISHED) continue;
+    $links = module_invoke_all('link', 'comment', $comment, 1);
+    $content .= theme('comment_view', $comment, $links);
+  }
+  return $content;
+} 
+
+// prefixes/appends the output to the node body based
+// on path
+function msa_content_nodeapi(&$node, $op = 'view', $teaser = FALSE, $page = FALSE) {
+  if ($op == 'insert') {
+    if ($node->type == 'financial') {
+      $client_uid = $node->field_client_reference[0]['uid'];
+      $client = user_load(array('uid' => $client_uid));
+
+      $to = $client->mail;
+      $subject = 'MSA invoice created on your profile';
+      $body = "Dear $client->name,
+      
+      An invoice has been created for your application with Med Student Advisors.
+      
+      Please login to you MSA Profile and click on 'My Payments' to view your invoice.
+      
+      MSA Accounts
+      accounts@medstudentadvisors.com
+      http://clients.medstudentadvisors.com
+      ";
+      $from = 'accounts@medstudentadvisors.com';
+      drupal_mail('Stripe payment complete', $to, $subject, $body, $from);
+    }
+  }
+  if ($op == 'submit') {
+    if ($_GET['pf'] && $node->type == 'content_document_uploads') {
+      if (user_access('Update client step')) {
+        $node->uid = $_GET['pf'];
+      }
+    }
+  }
+  if ($op == 'view' && $page) {
+    $extra = '';
+    $prefix = 0;
+      switch ($node->nid) { 
+        case 3264:
+        $prefix = 1;
+        $extra = msa_content_financial();//load financial view to node.
+        break;
+      }
+    //
+      switch ($node->type) {
+        /*case 'financial':
+          $client_uid = $node->field_client_reference[0]['uid'];
+          $client = user_load(array('uid' => $client_uid));
+        break;*/
+        case 'content_admin_user_notes':
+          //the assigned field value is used to filter who can see listing of latest notes.
+          $client_uid = $node->field_client_name[0]['uid'];
+          $client = user_load(array('uid' => $client_uid));
+          $modal = $_GET['type'];
+
+          if (!user_access('Update client step', $client) || $modal == 'modal') {
+            return;
+          } 
+
+          $notes = msa_content_personal_notes($node->uid, $node->nid);
+          $node->content['notes_related'] = array(
+            '#value' => $notes,
+            '#weight' => 100,
+          ); 
+        break;
+      }
+    // test to see if content should be rendered before the body content
+    // or after.
+    if ($prefix == 0) {  
+      $node->content['body']['#value'] .= $extra;
+    } 
+    else {
+      $output = $node->content['body']['#value'];
+      $output = $extra . $output;
+      $node->content['body']['#value'] = $output;
+    }
+  }
+}
+
+// includes on views.inc files in path for views loaded in files.
+function msa_content_views_default_views() {
+  $views = array();
+  $path = drupal_get_path('module', 'msa_content') . '/views';
+  $files = drupal_system_listing('.inc$', $path, 'name', 0);
+  
+  foreach($files as $file) {
+    include_once $file->filename;
+  }
+  return $views;
+}
+
+/*
+ * Autocomplete user search form functions.
+ * 
+ * @param
+ *  field: form field value
+ * 
+ * @return
+ *  results for autocomplete form field
+ */
+function msa_content_user_search ($field) {
+  
+// Run a query based on path for the autocomplete form. 
+$data_object = 'value';
+
+  if (arg(2) == 'surname') {
+    $result = db_query_range("SELECT value FROM {profile_values} WHERE fid=2 AND LOWER(value) LIKE LOWER('%s%%')", $field, 0, 10);
+  }
+  if (arg(2) == 'phone') {
+    $result = db_query_range("SELECT value FROM {profile_values} WHERE (fid=16 OR fid=17 OR fid=19) AND value LIKE '%s%%'", $field, 0, 10);
+  }
+  if (arg(2) == 'mail') {
+    $data_object = 'mail';
+    $result = db_query_range("SELECT * FROM {users} WHERE LOWER(mail) LIKE LOWER('%s%%')", $field, 0, 10);
+  }
+  
+  $matches = array();
+  
+  while ($data = db_fetch_object($result)) {
+    $matches[$data->$data_object] = check_plain($data->$data_object);
+  }
+  
+  print drupal_to_js($matches);
+  
+  exit(); 
+}
+
+// Form for autocomplete field based on path
+function msa_content_user_search_form () {
+
+  $field_title = 'Search by ' . arg(2);
+  $arg_path = 'clients/autocomplete/' .arg(2);
+  $form_param = arg(2);
+  if (arg(2) == '') {
+    $form_param = 'mail';
+  }
+  if (arg(2) == '') {
+    $field_title = 'Search by Email';
+    $arg_path = 'clients/autocomplete/mail';
+  }
+  $form['msa_user_search'] = array(
+    '#title' => $field_title,
+    '#type' => 'textfield',
+    '#autocomplete_path' => $arg_path,
+  );
+  $form['msa_user_search_data'] = array(
+    '#value' => $form_param,
+    '#type' => 'hidden',
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit')
+  );
+  return $form;
+}
+
+function msa_content_user_search_form_submit($form_id, $form_values) {
+  $query_param = '';
+  $uid_data = '';
+  $return_path = '';
+  $query_param = $form_values['msa_user_search_data'];
+  $uid_data = $form_values['msa_user_search'];
+  
+  if ($form_values['msa_user_search']) {
+    if ($query_param == 'phone') { 
+      $uid = db_result(db_query("SELECT pv.uid FROM {profile_values} pv WHERE pv.value = %d", $uid_data));
+      $return_path = 'user/' . $uid;
+    }
+    if ($query_param == 'mail') { 
+      $user = user_load(array('mail' => $form_values['msa_user_search']));
+      $return_path = 'user/' . $user->uid;
+    }
+    if ($query_param == 'surname') {
+      $return_path = 'clients/surname/' .$uid_data;
+    }
+    return $return_path;
+  }
+  drupal_set_message('No user found under this', 'status');
+}
+
+
+// Builds the custom user search page found on /clients/search/...
+function msa_content_user_search_page () {
+  $output = '<div class="client_search">';
+  $output .= 'Search for users by <br><a href="/clients/search/mail">Mail</a> || <a href="/clients/search/phone">Phone</a> || <a href="/clients/search/surname">Surname</a><br>';
+  $output .= drupal_get_form('msa_content_user_search_form');
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Build the form that submits to the same path providing arguments
+ * to the query.
+ * 
+ * @return
+ *  filtered listing of users.
+*/
+function msa_content_user_list() {
+  
+  $default_value = 0;
+  if (arg(2) != 'all' && is_numeric(arg(2))) {
+    $default_value = arg(2);
+    } else {
+    $default_value = 0;
+  }
+  
+  $default_year_value = 2018;
+  if (arg(1) != '' && is_numeric(arg(1))) {
+    $default_year_value = arg(1);
+  }
+  
+    $phases = _msa_get_phases();
+    $phases['all'] = t('All');
+    $years = array(
+      2018 => 2018,
+      2017 => 2017, 
+      2016 => 2016,
+      2015 => 2015,
+      2014 => 2014,
+      2013 => 2013,
+      2012 => 2012,
+      2011 => 2011,
+      2010 => 2010,
+      2009 => 2009,
+      2008 => 2008,
+      2007 => 2007,
+      2006 => 2006
+      );
+    
+      foreach ($phases as $key=>&$value) {
+        $phases[$key] = strip_tags($value);
+        $phases[$key] = drupal_substr($value, 0, 8);
+      }
+
+    $form['phase'] = array(
+      '#type' => 'select',
+      '#options' => $phases,
+      '#title' => t(''),
+      '#default_value' => $default_value,
+    );
+    $form['year'] = array(
+      '#type' => 'select',
+      '#options' => $years,
+      '#title' => t(''),
+      '#default_value' => $default_year_value,
+    );
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Filter'),
+    );
+    
+    return $form;
+}
+
+// Self submitting form for filtering users.
+function msa_content_user_list_submit($form_id, $form_values) {
+    return 'clients/' . $form_values['year'] . '/' . $form_values['phase'] . '/filter';
+}
+
+/* Provides a table listing of users by application year and phase.
+ * Allows admin to filter users by phase via a self submitting form.
+ * 
+ * @return
+ *  Themed table of users.
+ */ 
+function msa_content_user_lists () {
+
+GLOBAL $user;
+  if ($user->uid == 1 || in_array(3, array_keys($user->roles))) {
+    drupal_add_js(drupal_get_path('theme', 'study') .'/tableSearch.js');
+    drupal_add_js(drupal_get_path('theme', 'study') .'/sortable.js');  
+    
+    $list_year = '2018';
+    if((arg(0) == 'clients' && is_numeric(arg(1))) || (arg(0) == 'clients' && arg(1) == '')) {
+      $list_year = arg(1);
+      if (arg(1) == '' || arg(1) == 'clients') {
+      $list_year = '2018';
+      }
+      $phase = 0;
+      $all_phases = 0;
+      if(arg(2) == 'all') {
+        $all_phases = 1;
+        $phase = 0;
+      }
+      
+      // set msa.phase value to arg(2) if not showing all results.
+      if(arg(2) !== 'all' && is_numeric(arg(2))) {
+        $phase = arg(2);
+        $all_phases = 0;
+      }
+        
+        $sql = "SELECT DISTINCT (u.uid), u.uid uid, u.access access, u.created created, u.name uname, pv1.value name, pv2.value surname, pv3.value country, pv4.value citizenship, pv5.value profile_values_profile_sex, pv6.value academic, msa.phase phase 
+        FROM {users} u
+        LEFT JOIN {profile_values} pv1 ON u.uid = pv1.uid  AND pv1.fid=1
+        LEFT JOIN {profile_values} pv2 ON u.uid = pv2.uid  AND pv2.fid =2
+        LEFT JOIN {profile_values} pv3 ON u.uid = pv3.uid  AND pv3.fid =7
+        LEFT JOIN {profile_values} pv4 ON u.uid = pv4.uid  AND pv4.fid =9
+        LEFT JOIN {profile_values} pv5 ON u.uid = pv5.uid  AND pv5.fid =14
+        LEFT JOIN {profile_values} pv6 ON u.uid = pv6.uid  AND pv6.fid =41
+        LEFT JOIN {msa} ON msa.uid = u.uid 
+        WHERE u.uid != 0 
+        AND (msa.phase = %d OR %d)
+        AND pv6.value LIKE '%%%s%%'
+        ORDER BY u.uid DESC
+        LIMIT 0,1000";
+  
+      $res = db_query($sql, $phase, $all_phases, $list_year);
+      $total_rows = db_num_rows($res);
+      
+    }
+    
+    if (arg(0) == 'clients' && (arg(1) == 'new' || arg(1) == 'recent')) {
+      
+      if (arg(1) == 'new') {
+        $orderby = "ORDER BY u.created DESC";
+        $orderedby = "newest";
+      } 
+      else {
+        $orderby="ORDER BY u.access DESC";
+        $orderedby = "log in time";
+      }
+      
+      $sql = "SELECT DISTINCT u.uid uid, u.access access, u.created created, u.name uname, pv1.value name, pv2.value surname, pv3.value country, pv4.value citizenship, pv6.value academic, msa.phase phase 
+      FROM {users} u
+        INNER JOIN {profile_values} pv1 ON u.uid = pv1.uid  AND pv1.fid=1
+        INNER JOIN {profile_values} pv2 ON u.uid = pv2.uid  AND pv2.fid =2
+        INNER JOIN {profile_values} pv3 ON u.uid = pv3.uid  AND pv3.fid =7
+        INNER JOIN {profile_values} pv4 ON u.uid = pv4.uid  AND pv4.fid =9
+        LEFT JOIN {profile_values} pv6 ON u.uid = pv6.uid  AND pv6.fid =41
+        LEFT JOIN {msa} ON msa.uid = u.uid
+        WHERE u.uid != 0 
+        $orderby";
+    
+      $sql_count = "SELECT COUNT(DISTINCT u.uid) 
+      FROM {users} u
+        LEFT JOIN {profile_values} pv1 ON u.uid = pv1.uid
+        WHERE u.uid != 0";
+        
+      $res = pager_query($sql, 25, 0, $sql_count);
+    }
+    
+    // query that returns listing for autocomplete search form found at /clients/search/surname
+    if (arg(0) == 'clients' && (arg(1) == 'surname')) {
+      $search_param = arg(2);
+      $orderby="ORDER BY u.access DESC";
+      $orderedby = "surname and log in time";
+      
+      $sql = "SELECT DISTINCT u.uid uid, u.access access, u.created created, u.name uname, pv1.value name, pv2.value surname, pv3.value country, pv4.value citizenship, pv5.value profile_values_profile_sex, pv6.value academic, msa.phase phase 
+      FROM {users} u
+        INNER JOIN {profile_values} pv1 ON u.uid = pv1.uid  AND pv1.fid=1
+        INNER JOIN {profile_values} pv2 ON u.uid = pv2.uid  AND pv2.fid =2
+        INNER JOIN {profile_values} pv3 ON u.uid = pv3.uid  AND pv3.fid =7
+        INNER JOIN {profile_values} pv4 ON u.uid = pv4.uid  AND pv4.fid =9
+        INNER JOIN {profile_values} pv5 ON u.uid = pv5.uid  AND pv5.fid =14
+        LEFT JOIN {profile_values} pv6 ON u.uid = pv6.uid  AND pv6.fid =41
+        LEFT JOIN {msa} ON msa.uid = u.uid
+        WHERE pv2.value = '%s'
+        $orderby";
+    
+      $sql_count = "SELECT COUNT(DISTINCT pv.value)  
+      FROM {profile_values} pv 
+        WHERE pv.value = '%s'";
+    
+      $res = pager_query($sql, 25, 0, $sql_count, $search_param, $search_param);
+      
+    }
+    
+      $header = array(
+          'Code',
+          'Username',
+          'Name',
+          'Surname',
+          'Country',
+          'Passport',
+          'Step',
+          'Academic',
+          array('data' => t('Member for'), 'field' => 'u.created'),
+          array('data' => t('Last access'), 'field' => 'u.access')
+        );
+    
+        while($ob = db_fetch_object($res)){
+          $row[] = array(
+          'uid' => l($ob->uid, 'client-info', array('class' => 'client-info', 'title' => $ob->name),'page=ajax&client='. $ob->uid, NULL), 
+          'uname' => l($ob->uname, 'user/' .$ob->uid, array('target' => '_blank')),  
+          $ob->name, 
+          $ob->surname, 
+          $ob->country, 
+          $ob->citizenship, 
+          ($ob->phase+1), 
+          substr($ob->academic, 0, 50), 
+          format_interval(time() - $ob->created),
+          ($ob->access) ? (format_interval(time() - $ob->access)) : 'never'); 
+        }
+  
+    if ((arg(0) == 'clients' && is_numeric(arg(1))) || (arg(0) == 'clients' && arg(1) == '')) {
+      $step = $phase + 1;
+      $output = "<div class='client_listing'><h1>" . $list_year . " - A total of [" . $total_rows . "] applicants in [" . (($all_phases != 1)?"Step: $step":' All Phases ') . "]</h1>";
+      $output .= "<div class='filters'>" . drupal_get_form('msa_content_user_list');
+      // input for js search
+      $output .= '<div><label for="kwd_search">Search:</label> <input type="text" id="kwd_search" value=""/></div></div></div><br>';
+      // sortable class trigger js behavior for sortable tables        
+      $output .= theme_table($header, $row, array('class' => 'sortable'));
+      $output .= theme('pager', NULL, 25, 0); 
+    }
+    if (arg(0) == 'clients' && (arg(1) == 'new' || arg(1) == 'recent' || arg(1) == 'surname')) {
+      $output = "<h1>" . "Customers listed by " . $orderedby . "</h1>";
+      $output .= theme('pager', NULL, 10, 0);
+      // input for js search
+      $output .= '<div class="js_filters"><label for="kwd_search">Search:</label> <input type="text" id="kwd_search" value=""/></div>';  
+      // sortable class trigger js behavior for sortable tables   
+      $output .= theme_table($header, $row, array('class' => 'sortable'));  
+      $output .= theme('pager', NULL, 10, 0);
+    }
+  
+    return $output;
+  }  
+}
+
+/*
+ * Builds the custom blocks for msa_content.
+ * 
+ * @param
+ *  delta: block delta
+ * @return
+ *  renders a block directly via code.
+ * 
+ **/
+function msa_content_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $blocks[0]['info'] = t('MSA-Admin User Info');
+    $blocks[0]['region'] = 'sidebar_right';
+    $blocks[1]['info'] = t('MSA-Client Edit Profile');
+    $blocks[1]['region'] = 'sidebar_right';
+    $blocks[2]['info'] = t('MSA-Client account info');
+    $blockq[2]['region'] = 'header';
+    return $blocks;
+  }
+  if ($op == 'view') {
+    switch ($delta) {
+      case 0:
+        $block['content'] = msa_content_admins_info_block();
+        break;
+      case 1:
+        // We use one function to customize the block head and body
+        $block['content'] = msa_content_clients_info_block ('body');
+        break;
+      case 2:
+        $block['content'] = msa_content_clients_header_block ();
+        break;
+    }
+    return $block;
+  }
+}
+
+/* Builds a basic block to display username and user id for client users.
+ * The block is placed in the header of the screen so that client users
+ * may easily see what their client code and username is.
+ * 
+ * @return
+ *  A user specific block containing user id and username
+ */
+
+function msa_content_clients_header_block () {
+GLOBAL $user;
+  if (in_array(3, array_keys($user->roles)) || $user->uid < 1) {
+    return;
+  }
+  $output = '<span>My Client Code: </span>' . $user->uid;
+  $output .= '&nbsp;&nbsp; <span>My User Name: </span>' . $user->name;
+  return $output;
+}
+
+/* 
+ * Builds the user info block that provides administrators with
+ * basic profile information throughout the site.
+ * 
+ * @return
+ *  Custom user info block containing user profile data for the user
+ *  who created the node or is assigned to the node in user reference field.
+ */ 
+
+function msa_content_admins_info_block () {
+  // Don't show on user profile pages
+  if (arg(0) == 'user') {
+    return;
+  }
+  GLOBAL $user;
+  // visible only to users with role=msa staff.
+  if (!(in_array(3, array_keys($user->roles)))) {
+    return;
+  }
+  $content_types = array('lightcrm', 'content_document_uploads');
+  $account = NULL;
+  
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $node = node_load(arg(1));
+    if (in_array($node->type, $content_types)) {
+      $account = user_load(array('uid' => $node->uid));   
+      $roles = (module_exists('personal_functions')) ? personal_functions_user_roles($account->uid) : array();
+      if (in_array(3, array_keys($roles)) || in_array(6, array_keys($roles))) {
+        $assigned_uid = $node->field_assigned_to[0][uid];
+        $account = user_load(array('uid' => $assigned_uid)); 
+      }
+    }  
+  }
+  
+  elseif(arg(0) == 'node' && arg(1) == 'add' && arg(2) == 'lightcrm' && !empty($_GET['user'])) {
+    $account= user_load(array('name' => $_GET['user'])); 
+  }
+  elseif(arg(0) == 'comment' && arg(1) == 'reply' && is_numeric(arg(2))) {
+    $node = node_load(arg(2));
+    $assigned_uid = $node->field_assigned_to[0][uid];
+    $account = user_load(array('uid' =>$assigned_uid)); 
+  }
+
+  if($account) {
+    $output .= '<div class="field"><label>User Name: </label>' . l($account->name, 'user/'. $account->uid, array('target' => '_blank', 'class' => 'blank')) . '</div>';
+    $output .= '<div class="field"><label>First Name: </label>' . check_plain($account->profile_name) ."</div>";
+    $output .= '<div class="field"><label>Surname: </label>' . check_plain($account->profile_surname) ."</div>";
+    $output .= '<div class="field"><label>Sex: </label>' . check_plain($account->profile_sex) ."</div>";
+    $output .= '<div class="field"><label>Step: </label>' . ($account->phase+1) . "</div>";   
+    $output .= '<div class="field"><label>Country: </label>' . check_plain($account->profile_countryresidence) . "</div>";
+    $output .= '<div class="field"><label>Citizenship: </label>' . check_plain($account->profile_citizenship) . "</div>";
+    $output .= '<div class="field"><label>User Hour: </label>' . format_date(time(), 'custom','H:i',  $account->timezone) . "</div>";
+    $output .= '<div class="field"><label>Phone: </label>' . check_plain($account->profile_hometel) . "</div>";
+    $output .= '<div class="field"><label>Mobile: </label>' . check_plain($account->profile_mobile) . "</div>";
+    $output .= '<div class="field"><label>Contact Time: </label>' . check_plain($account->profile_contact_time) . "</div>";
+    $output .= '<div class="field"><label>Email: </label>' . check_plain($account->mail) . "</div>";
+    $output .= '<div class="field"><label>Last Login: </label>' . (($account->access)?format_interval(time() - $account->access):'never') . " (". $account->user_login_count .")</div>";
+    $output .= '<div class="field"><label>Created: </label>' . format_date( $account->created, 'custom',"F j, Y") . "</div>";
+
+   $ip = user_stats_get_stats('ip_address', $account->uid);
+   if (!$ip) {
+      $sql = "SELECT hostname FROM accesslog WHERE uid = %d ORDER BY timestamp DESC LIMIT 1";
+      $ip = db_result(db_query($sql, $account->uid));
+    }
+    if ($ip) {
+      $query = @unserialize(file_get_contents('http://ip-api.com/php/'.$ip));
+      if($query && $query['status'] == 'success') {
+        $output .= '<div class="field"><label>Location: </label>' . $query['country'].' - ' . $query['city'] . '</div>';
+         } else {
+            $output .= '<div class="field"><label>Location: </label>NA</div>';
+         }
+      $output .= '<div class="field"><label>Last User IP: </label>' . $ip . '</div>';
+    }
+    return $output;
+  }
+}
+
+/*
+ * Generates user profile popup modal data.
+ * On user listings a popup link is provided on the user id which
+ * shows a summarized profile of the user.
+ * 
+ * @ return
+ *  Custom view of user profile data.
+ */ 
+function msa_content_client_info() {
+  $client = '';
+  $client_id  =  $_GET['client'];
+
+  if ( user_access('administer users') && $client_id) {
+     $account = user_load(array('uid' =>$client_id)); 
+
+    //Summary
+    $output = '<div class="pf-cat"><h2>Summary</h2>';
+
+      $output .= '<div class="field user-pic">';
+        if($account->picture){
+
+          $output .= l(theme('imagecache', 'teaser_image', $account->picture), $account->picture, array('title' => t('View user profile.'), 'class' => 'thickbox'), NULL, NULL, FALSE, TRUE);
+        } 
+      $output .= '</div>';
+
+      $output .= '<div class="field"><label>Steps: </label>' . ($account->phase+1) . "</div>";    
+      $output .= '<div class="field"><label>Last Login: </label>' . (($account->access)?format_interval(time() - $account->access):'never') . " (". $account->user_login_count .")</div>";
+      $output .= '<div class="field"><label>Created: </label>' . format_date( $account->created, 'custom',"F j, Y") . "</div>";  
+
+      //user location
+      $ip = user_stats_get_stats('ip_address', $account->uid);
+      if (!$ip) {
+        $sql = "SELECT hostname FROM accesslog WHERE uid = %d ORDER BY timestamp DESC LIMIT 1";
+        $ip = db_result(db_query($sql, $account->uid));
+      }
+      if ($ip) {
+        $query = @unserialize(file_get_contents('http://ip-api.com/php/'.$ip));
+        if($query && $query['status'] == 'success') {
+          $output .= '<div class="field"><label>Location: </label>' . $query['country'].' - ' . $query['city'] . '</div>';
+        } else {
+          echo 'Unable to get location';
+        }
+        $output .= '<div class="field"><label>Last User IP: </label>' . $ip . '</div>';
+      }
+    $output .= '</div>'; 
+
+    //personal information
+    $output .= '<div class="pf-cat"><h2>Personal Information</h2>';
+      $output .= '<div class="field"><label>User Name: </label>' . check_plain($account->name) . '</div>';
+      $output .= '<div class="field"><label>First Name: </label>' . check_plain($account->profile_name) ."</div>";
+      $output .= '<div class="field"><label>Surname: </label>' . check_plain($account->profile_surname) ."</div>";
+      $output .= '<div class="field"><label>Sex: </label>' . check_plain($account->profile_sex) ."</div>";
+      $output .= '<div class="field"><label>Country: </label>' . check_plain($account->profile_countryresidence) . "</div>";
+      $output .= '<div class="field"><label>Citizenship: </label>' . check_plain($account->profile_citizenship) . "</div>";
+    $output .= '</div>';
+
+    //contact info
+    $output .= '<div class="pf-cat"><h2>Contact Details</h2>';    
+      $output .= '<div class="field"><label>User Hour: </label>' . format_date(time(), 'custom','H:i',  $account->timezone) . "</div>";
+      $output .= '<div class="field"><label>Phone: </label>' . check_plain($account->profile_hometel) . "</div>";
+      $output .= '<div class="field"><label>Mobile: </label>' . check_plain($account->profile_mobile) . "</div>";
+      $output .= '<div class="field"><label>Contact Time: </label>' . check_plain($account->profile_contact_time) . "</div>";
+      $output .= '<div class="field"><label>Email: </label>' . check_plain($account->mail) . "</div>";
+      $output .= '<div class="field"><label>Skype: </label>' . check_plain($account->profile_skype) . "</div>";
+    $output .= '</div>';
+
+    $output .= '<div class="clear"></div>';
+
+    //Academic Details
+    $output .= '<div class="pf-cat"><h2>Academic Details</h2>';
+      $output .= '<div class="field"><label>Academic program: </label>' . check_plain($account->profile_academic) . "</div>";    
+    $output .= '</div>';
+
+    //Financial info
+    $output .= '<div class="pf-cat"><h2>Financial information</h2>';
+      $output .= '<div class="field"><label>Method of funding: </label>' . check_plain($account->profile_mof) . "</div>"; 
+      $output .= '<div class="field"><label>total anual budget: </label>' . check_plain($account->profile_tab) . "</div>"; 
+      $output .= '<div class="field"><label>Anual living expenses: </label>' . check_plain($account->profile_living) . "</div>";      
+    $output .= '</div>';    
+  }
+
+    $output .= '<div class="clear"></div>';
+
+//admin notes
+  if(module_exists('personal_functions')) {
+    $output .= '<h2 class="notes-title">'. t('Admin Notes') .'</h2>';
+    $output .=   admin_notes_display($account->uid,$account->name) ;
+  }
+
+ return $output;  
+}
+
+/* Renders all blocks for the header in a single function that
+ * controls visibility.
+ * 
+ * @return
+ *  themed visibility cotrol listing of blocks
+ */ 
+function msa_content_header_blocks () {
+ GLOBAL $user;
+ 
+  if (in_array(3, array_keys($user->roles))) {
+    // Admin specific menu.
+    $output = '<div class="block block-menu" id="block-menu-496"><div class="content">';
+    $block = module_invoke('menu', 'block', 'view', 496);
+    $output .= $block['content'] . '</div></div>';
+    
+    // User jump form.
+    if(module_exists('user_jump')) {
+      $block = module_invoke('user_jump', 'block', 'view', 0);
+      $output .= '<div class="block block-user_jump" id="block-user_jump-0"><div class="content">';
+      $output .= $block['content'] . '</div></div>';
+    }
+  }
+  
+  if (in_array(2, array_keys($user->roles)) && !in_array(3, array_keys($user->roles))) {
+    // client specific menu.
+    $output .= '<div class="block block-menu" id="block-menu-511"><div class="content">';
+    $block = module_invoke('menu', 'block', 'view', 511);
+    $output .= $block['content'] . '</div></div>';
+    
+    // client specific block with username and user id.
+    if(module_exists('msa_content')) {
+      $output .= '<div class="block block-msa_content" id="block-msa_content-2"><div class="content">';
+      $block = module_invoke('msa_content', 'block', 'view', 2);
+      $output .= $block['content'] . '</div></div>';
+    }
+  }
+  
+  // Standard top menu for all users.
+  $output .= '<div class="block block-menu" id="block-menu-75"><div class="content">';
+  $block = module_invoke('menu', 'block', 'view', 75);
+  $output .= $block['content'] . '</div></div>';
+
+  // MSA Certifications block
+  if ($user->uid == 0) {
+    $block = module_invoke('block', 'block', 'view', 25);
+    $output .= '<div class="block" id="block-25"><div class="content">';
+    $output .= $block['content'] . '</div></div>';  
+  }
+  
+  return $output;
+}
+
+/* A single function to out put all footer blocks directly into the
+ * the template page.
+ * 
+ * @return
+ *  themed listing of blocks.
+ */
+function msa_content_footer_blocks () {
+  // social links
+  $block = (object) module_invoke('block', 'block', 'view', 22);
+  $output = theme('block',$block);
+  
+  // footer menu
+  $block = (object) module_invoke('menu', 'block', 'view', 458);
+  $output .= theme('block',$block);
+  
+  // who's online block
+  $block = (object) module_invoke('user', 'block', 'view', 3);
+  $output .= theme('block',$block);
+  
+  return $output;
+}
+
+
+/**
+* New Clients listing for Team Desktop
+*/
+function msa_content_new_clients() {
+
+  $sql = "SELECT u.uid, u.created, u.name uname, pv1.value name, pv2.value surname 
+  FROM users u
+  LEFT JOIN {profile_values} pv1 ON u.uid = pv1.uid  AND pv1.fid=1
+  LEFT JOIN {profile_values} pv2 ON u.uid = pv2.uid  AND pv2.fid=2
+  ORDER BY u.created DESC
+  LIMIT 9";
+
+  $res = db_query($sql);
+    while ($ob = db_fetch_object($res)) {
+      $client_uname = drupal_substr($ob->uname, 0, 28);
+      $client_user = '<div><label>Client: </label>'. l($client_uname, 'client-info', array('class' => 'client-info'), 'page=ajax&client='. $ob->uid) .'</div>';
+      $client_names = drupal_substr($ob->names, 0, 28);
+      $client_names = '<div><label>Name: </label>' . l($client_names . ' ' . $ob->surname, 'user/'. $ob->uid, array('target' => '_blank', 'class' => 'blank')) .'</div>';
+      $client_country = '';
+      if (module_exists('personal_functions')) { 
+        //$location = pf_user_location($ob->uid); 
+        $location = '';
+      }
+      if ($location) {
+        $client_country = '<div><label>Location: </label>'. drupal_substr($location, 0, 28) .'</div>';
+      }
+      else {
+        $client_country = '<div><label>Location: </label>NA</div>';
+      }
+      $client_reg = '<div><label>Created on: </label>'. format_date($ob->created, 'custom', 'F j, Y @ H:i') .'</div>';
+      $client_items[] = $client_user . $client_names . $client_country . $client_reg;
+    }
+
+  $output = theme('item_list', $client_items, '', 'ul', array('class' => 'new-clients'));
+
+  return $output;  
+}
+
+/**
+* Creates lsiting of last 15 admin notes
+* but the in which the list is printed
+*
+* @param
+*   $uid: user in admin notes assigned field
+*   $nid: admin notes node nid(node in wich the list is printed)
+* @return
+*   themes list of admin notes
+*/
+function msa_content_personal_notes($uid, $nid) {
+
+  $sql = "SELECT node.nid, node.title, node.created, .node.changed
+FROM node
+LEFT JOIN content_type_content_admin_user_notes ct ON ct.nid = node.nid 
+WHERE field_client_name_uid = %d AND ct.nid != %d
+ORDER BY node.changed DESC
+LIMIT 0, 15"; 
+  $res = db_query($sql, $uid, $nid);
+  while ($notes = db_fetch_object($res)) {
+    $title = $notes->title;
+    $created = format_date($notes->created,'custom', 'd/m/y@H:i');
+    $submitted = " created on $created";
+
+    //get last comment date
+    $sql_comments = "SELECT timestamp FROM comments
+      WHERE nid = %d
+      ORDER BY timestamp DESC
+      LIMIT 1";
+    $comment_timestamp = db_result(db_query($sql_comments, $notes->nid));
+    if ($comment_timestamp) {
+      $modified = format_date($comment_timestamp, 'custom', 'd/m/y@H:i');
+      $submitted .= " updated on $modified";
+    }
+    $note[] = l(t('@title', array('@title' => $title)), 'node/'. $notes->nid, array('class' => 'open-admin-note'), 'page=ajax&type=modal', NULL) . "<span class='submitted'>$submitted</span>";
+  }
+
+  if ($note) {
+    $output = '<div class="notes-listing"><h2 class="clearfix">'. t('Work Notes Archive:') .'</h2>';
+    $output .= theme('item_list', $note) .'</div>';
+  }
+
+  return $output;
+}
+
+/* builds content for user documents listing
+ * 
+ * @return
+ *  themed view of document nodes with attachments.
+ */ 
+function msa_content_user_docs() {
+global $user;
+  if($user->uid > 0) {
+    $view_name = 'myuser_content';
+    $limit = 100;
+    $view_args = array();
+    $view = views_get_view($view_name);
+    //$output = views_build_view('embed', $view, $view_args, FALSE, $limit);
+
+    $output .= msa_client_doc_files_listing();
+  
+  } else {
+      $output = 'Oops! This page contains sensitive information for registered clients. Please login to your MSA account to view this info. Thank you.';
+  }
+  
+  return $output;
+}
+
+/* builds content for user invoices
+ * 
+ * @return
+ *  themed view of financial nodes.
+ */ 
+function msa_content_financial() {
+  $view_name = 'Financials';
+  $view_args = array();
+  $view = views_get_view($view_name);
+  $output = views_build_view('embed', $view, $view_args, FALSE, 10);
+  return $output;
+}
+
+/*
+ * Builds content for updated site documents
+ * 
+ * @return
+ *  two views with table listing of updated content
+ */
+ 
+function msa_content_new_content() {
+  $view_name = 'updated_pages';
+  $view_args = array();
+  $view = views_get_view($view_name);
+  $output = views_build_view('embed', $view, $view_args, FALSE, 100);
+
+  $view_name = 'updated_books';
+  $view_args = array();
+  $view = views_get_view($view_name);
+  $output .= views_build_view('embed', $view, $view_args, FALSE, 100);
+
+  return $output;
+  
+}
+
+/*
+ * Update financial node, called from finacial tpl, 
+ * from study theme. 
+ * 
+ * @param
+ *   $stripe_token: stripe operation number
+ *   $nid: invoice nid
+ *   $amount: Amount payed via stripe
+ * @return
+ *   
+ */ 
+function msa_content_stripe_payment($nid, $stripe_token, $amount) {
+  
+  $node = node_load($nid);
+
+  if (!$node) {
+    return drupal_set_message('Invoice number error', 'error');
+  }
+  $amount = ceil($amount);
+  $client = $node->field_client_reference[0]['uid'];
+  $debt = $node->field_outstanding_amount[0]['value'];
+  $package = $node->field_package_price[0]['value'];
+  $payed = $node->field_payment_received[0]['value'];
+  $fee = $node->field_card_fee[0]['value'] ? $node->field_card_fee[0]['value'] : 2.9;
+
+  //card data is in dollars, her is converted to euros and fee is dicounted
+  $euro = msa_stripe_get_currency('USD', 'EUR', ($amount/100));
+  $amount_euro = $euro * (1 - ($fee/100));
+
+  $total = $payed + ceil($amount_euro);
+  $outstanding = $package - $total;
+
+  $amount_rounded = ceil($amount_euro);
+
+  $date = date('Y/m/d');
+  $node->field_payment_log[0]['value'] .= '</br>'. t('Payment amount: €@amount | Stripe code: @code on @date', array('@amount' => $amount_rounded, '@code' => $stripe_token, '@date' => $date));
+
+  node_invoke_nodeapi($node, 'update');
+
+  $node = node_submit($node);
+  node_save($node);
+  if ($node->nid) {
+    $financial_query = "UPDATE {content_type_financial} SET field_client_reference_uid = %d, field_package_price_value = %d, field_payment_received_value = %d, field_outstanding_amount_value = %d WHERE nid = %d";
+    db_query($financial_query, array($client, $package, $total, $outstanding, $nid));
+    
+    return TRUE;
+  }  
+}
+
+function msa_content_financial_data($uid) {
+  $account = user_load(array('uid' =>$uid));
+
+  $output['name'] = check_plain($account->profile_name);
+  $output['name'] .= ' '. check_plain($account->profile_surname); 
+
+  $output['address'] = check_plain($account->profile_resaddress);
+
+  return $output;
+}
+

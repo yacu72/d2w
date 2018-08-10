@@ -35,6 +35,17 @@
 
 		$migrateComments = new d2w_Migrate_Comments;
 
+		$migrateImages = new d2w_Migrate_Images;
+
+		print '<pre>';
+		//print_r( $migrateImages->d2w_migrate_images_info( 'moflow_photo' ) );
+		//$images_groups_test = get_option('d2w_moflow_photo_images_import');
+		//print_r( $images_groups_test );
+		print '</pre>';
+
+		//echo $migrateImages->d2w_batch_migration_display( '', 'moflow_photo' );
+		//echo $migrateImages->d2w_image_content_filter( 44 );
+
 	?>
 
 	<div class="wrap">
@@ -54,6 +65,47 @@
 
 						<form class="migrate-form" method="post">
 
+							<?php
+							/**
+							 *
+							 * MIGRATE SETTINGS
+							 *
+							 */
+							?>
+							<div class="postbox" >
+				        <button type="button" class="handlediv button-link" aria-expanded="true">
+			            <span class="screen-reader-text"><?php _e('Toggle panel'); ?></span>
+			            <span class="toggle-indicator" aria-hidden="true"></span>
+				        </button>
+								<h3 class="hndle ui-sortable-handle">
+									<span><?php _e( 'Migrate Settings', 'd2w' ); ?></span>
+								</h3>	
+								
+								<div class="inside" >
+
+									<?php include ('d2w-admin-settings-display.php'); ?>
+
+									<!--<input value="" class="settings-input" type="text" data-name="images-url" placeholder="Images URL" >
+									<description><?php _e( 'Load images from live site.', 'd2w' ); ?></description>
+									<hr>
+
+									<input disabled value="" class="settings-input" type="text" data-name="images-folder-path" placeholder="Images Folder Path" >
+									<description><?php _e( 'Load images from a folder.', 'd2w' ); ?></description>								
+									<hr>
+
+									<input data-action="migrate-settings" class="button button-migrate-settings" type="submit" value="Save Settings">-->
+
+								</div>						
+
+							</div>
+
+							<?php
+							/**
+							 *
+							 * MIGRATE USERS
+							 *
+							 */
+							?>
 							<div class="postbox">
 				        <button type="button" class="handlediv button-link" aria-expanded="true">
 				            <span class="screen-reader-text"><?php _e('Toggle panel'); ?></span>
@@ -74,7 +126,14 @@
 
 								</div>
 							</div>
-							<!-- TAXONOMY -->
+
+							<?php
+							/**
+							 *
+							 * MIGRATE TAXONOMY
+							 *
+							 */
+							?>
 							<div class="postbox">
 				        <button type="button" class="handlediv button-link" aria-expanded="true">
 				            <span class="screen-reader-text"><?php _e('Toggle panel'); ?></span>
@@ -87,15 +146,17 @@
 
 									<?php echo $migrateTax->d2w_drupal_node_to_tax_rel(); ?>
 
-									<!--<?php if ( !get_site_option('d2w_taxonomy_migrated') ) { ?>
-										<input data-action="migrate-tax" class="button button-migrate" type="submit" value="Migrate Taxonomy">	
-									<?php } else { ?>
-										<?php _e('Taxonomy Migration completed', 'd2w'); ?>
-									<?php } ?>-->
-
 								</div>
 
 							</div>
+
+							<?php
+							 /**
+							  *
+							  * MIGRATE POST TYPES
+							  *
+							  */
+							 ?>
 
 							<?php foreach ($drupal_node_types as $type => $name) { ?>
 
@@ -106,7 +167,9 @@
 					        </button>
 									<h3 class="hndle ui-sortable-handle">
 
-										<span><?php echo sprintf( __( 'Migrate Drupal post type: %s', 'd2w' ), $name); ?></span></h3>
+										<span><?php echo sprintf( __( 'Migrate Drupal post type: %s', 'd2w' ), $name); ?></span>
+										<?php echo get_option("d2w_". $type ."_migrated") ? get_option("d2w_". $type ."_migrated") : ''; ?>
+									</h3>
 
 									<div class="inside">
 
@@ -116,8 +179,9 @@
 										</select>
 
 										<h3>Map fields:</h3>
-										<?php echo $migratePost->d2w_migrate_node_fields( $type ); ?>		
 										<hr>
+										<?php echo $migratePost->d2w_migrate_node_fields( $type ); ?>		
+
 										
 										<?php if ( !get_option( 'd2w_'. $type .'_migrated' )  ) { ?>
 
@@ -131,7 +195,9 @@
 										<hr>
 										<?php 
 										/**
+										 *
 							       * MIGRATE POST TERMS 
+							       *
 							       */
 										?>
 										<h3>Migrate Post Terms</h3>
@@ -148,7 +214,9 @@
 										<hr>
 										<?php
 											/**
+											 *
 								       * MIGRATE POST COMMENTS
+								       *
 								       */
 										?>
 										<h3>Migrate Post Comments - <?php echo $migrateComments->d2w_comments_counter( $type ); ?></h3>
@@ -160,7 +228,62 @@
 
 											<?php echo get_option('d2w_'. $type .'_comments_migrated'); ?> Comments Migrated.<i class="dashicons dashicons-yes"></i> 
 
-										<?php } ?>										
+										<?php } ?>
+										<hr>
+										<?php	
+											/**
+											 *
+								       * MIGRATE POST IMAGES
+								       *
+								       */
+										?>
+										<?php $images_data = $migrateImages->d2w_migrate_images_info( $type ); ?>
+										<h3>Migrate Post Images - <?php echo $images_data['count']; ?></h3>
+										
+										<?php if( !get_option('d2w_'. $type .'_images_migrated') ) { ?>
+
+											<h4>Total size to migrate: <?php echo $images_data['total_size']; ?> kb</h4>											
+
+											<label>Batch Limit for Migration:</label>
+
+											<?php $size_limit = ( get_option( 'd2w_size_limit_'. $type)/1000000 ); ?>
+
+											<select data-drupal-type="<?php echo $type; ?>" name="data-size-limit" >
+												<option <?php if ( $size_limit == 100 ) { echo 'selected=selected'; } ?> value="100">100MB</option>
+												<option <?php if ( $size_limit == 50 ) { echo 'selected=selected'; } ?> value="50">50MB</option>
+												<option <?php if ( $size_limit == 20 ) { echo 'selected=selected'; } ?> value="20">20MB</option>
+												<option <?php if ( $size_limit == 10 ) { echo 'selected=selected'; } ?> value="10">10MB</option>
+												<option <?php if ( $size_limit == 5 ) { echo 'selected=selected'; } ?> value="5">5MB</option>
+												<option <?php if ( $size_limit == 2 ) { echo 'selected=selected'; } ?> value="2" >2MB</option>
+											</select>
+											<hr>
+
+											<div class="d2w-batch-list-<?php echo $type; ?>" >
+
+												<?php echo $migrateImages->d2w_batch_migration_display( '', $type ); ?>
+
+											</div>
+
+											<!--<?php 
+												foreach( $images_data as $key => $data) {
+												
+														if ( $key != 'count' && $key != 'total_size') {
+															echo count($data) .' Images to migrate.';
+															echo "<input data-action='migrate-image-group' data-images-group='". $key ."' type='submit' value='Migrate Group ". $key ."' >";
+															echo '<hr>';
+														}
+
+												}
+											?>-->
+
+											<input data-action="migrate-post-images" data-drupal-type="<?php echo $type; ?>" class="buttton button-migrate" type="submit" value="Migrate All Images" > 
+
+										<?php } else { ?>
+
+											<?php echo get_option('d2w_'. $type .'_images_migrated'); ?> Images Migrated.<i class="dashicons dashicons-yes"></i> 
+
+										<?php } ?>
+																	
 
 									</div>
 								</div>	
