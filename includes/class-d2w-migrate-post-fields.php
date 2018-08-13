@@ -40,6 +40,10 @@ class d2w_Migrate_Post_fields extends  d2w_Migrate_Post_Types {
 
 			foreach ( $post_type_fields as $drupal_field_name => $wp_field_name ) {
 
+				if ( $data_array[$drupal_field_name] != '' ) {
+					$out[] = array( $wp_post_id, $wp_field_name, sanitize_text_field( $data_array[$drupal_field_name] ) );
+				}
+
 				$field_value = $drupal_field_name .'_value'; 
 
 				if ( $data_array[$field_value] != '' ) {

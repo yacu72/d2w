@@ -59,7 +59,8 @@ class d2w_Migrate_Comments {
 			);
 
 			// Insert the comment into the database
-			$comment_id[] = wp_insert_comment($data);
+			$comment_id = wp_insert_comment($data);
+			$comment_ids[] = $comment_id;
 
 			// Save original comment id in wp_comments table
 			$wpdb->update($wpdb->comments, array('old_comment_ID' => $comment->cid), array('comment_ID' => $comment_id));
@@ -75,9 +76,9 @@ class d2w_Migrate_Comments {
 
 		}
 
-		update_option('d2w_'. $drupal_node_type .'_comments_migrated', count( $comment_id ) );
+		update_option('d2w_'. $drupal_node_type .'_comments_migrated', count( $comment_ids ) );
 
-		return count( $comment_id );
+		return count( $comment_ids );
 	}
 
 	/**
