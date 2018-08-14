@@ -37,8 +37,6 @@
 
 		$migrateImages = new d2w_Migrate_Images;
 
-		echo $migrateImages->d2w_image_content_filter( 103 );
-
 		print '<pre>';
 		//print_r( $migrateImages->d2w_migrate_images_info( 'moflow_photo' ) );
 		//$images_groups_test = get_option('d2w_moflow_photo_images_import');

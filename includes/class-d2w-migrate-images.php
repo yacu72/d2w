@@ -274,8 +274,6 @@ class d2w_Migrate_Images {
 
 	    $result = wp_update_post( $edited_post, true);
 
-	    echo $result;
-
 	    if (is_wp_error($result)){
 	      wp_die( 'Post not saved' );
 	    }
