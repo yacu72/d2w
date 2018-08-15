@@ -49,6 +49,8 @@ class d2w_Migrate_Post_Types {
 
 		$res = $wpdb->get_results($wpdb->prepare($sql, $query_vars));
 
+		$permalink_uris = get_option('permalink-manager-uris');
+
 		foreach($res as $key => $node) {
 
 			$post_author = $node->ID;
@@ -88,6 +90,12 @@ class d2w_Migrate_Post_Types {
 					)
 				);
 
+				// Set WP alias
+				$permalink_uris[$post_id] = $node_dst[0]->dst; 
+
+				// Arrays for migrated posts counter
+				$post_ids[] = $post_id;
+
 				// save original id in new register for future reference
 				$wpdb->update($wpdb->posts, array('old_ID' => $node->nid), array('ID' => $post_id));
 
@@ -103,6 +111,7 @@ class d2w_Migrate_Post_Types {
 					add_post_meta( $post_id, "$field", $metadata[2] );
 				}
 
+
 				// Set the migration flag to true.
 				update_option( 'd2w_'. $drupal_node_type .'_migrated', $i );
 
@@ -110,6 +119,30 @@ class d2w_Migrate_Post_Types {
 			} else {
 				$post_id = -2;
 			}
+		}
+
+		// Save Permalinks alias
+		update_option('permalink-manager-uris', $permalink_uris);
+
+		// Migrate hierarchycal data for books
+		$hierarchycal = false;
+		$hierarchycal = get_option('d2w_'. $drupal_node_type .'_hierarchycal');
+
+		if ( $hierarchycal && ($drupal_node_type == 'book') ) {
+
+			// query that fix parent pages
+			$sql = "SELECT wpp.ID new_nid, wpp1.ID new_parent
+		FROM wp_posts wpp
+		INNER JOIN book b ON wpp.old_ID = b.nid
+		INNER JOIN wp_posts wpp1 ON wpp1.old_ID = b.bid 
+		WHERE b.nid != b.bid";
+
+			$res = $wpdb->get_results($sql);
+
+			foreach($res  as $key => $data) {
+				$wpdb->update($wpdb->posts, array('post_parent' => $data->new_parent), array('ID' => $data->new_nid));
+			}
+ 
 		} 
 
 		return $post_id;

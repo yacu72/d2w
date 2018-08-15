@@ -211,6 +211,12 @@ class D2w {
     $this->loader->add_action( 'wp_ajax_d2w_migrate_images_action', $plugin_admin, 'd2w_migrate_images_handler' );
     $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_images_action', $plugin_admin, 'd2w_migrate_images_handler' ); 
 
+    /**
+     * Ajax call for Hierarchycal post type
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_hierarchycal_post_action', $plugin_admin, 'd2w_hierarchycal_post_handler' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_hierarchycal_post_action', $plugin_admin, 'd2w_hierarchycal_post_handler' );     
+
 	}
 
 	/**

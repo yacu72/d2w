@@ -26,7 +26,7 @@
 	 * Ideally, it is not considered best practise to attach more than a 
 	 * single DOM-ready or window-load handler for a particular page.
 	 * Although scripts in the WordPress core, Plugins and Themes may be
-	 * practising this, we should strive to set a better example in our own work .
+	 * practising this, we should strive to set a better example in our own work.
 	 */
 	 $(document).ready(function() {
 
@@ -34,6 +34,40 @@
     $('.handlediv').click(function () {
         $(this).parent().toggleClass("closed").addClass('postbox');
     });	 
+
+    /**
+     * Hierarchycal Checkbox
+     */
+    $('input[name=hierarchycal-box]').change( function(){
+    		var drupal_type = $(this).attr('data-drupal-type');
+    		var hierarchycal = '';
+
+        if (this.checked) {
+					hierarchycal = true;      	
+        } else {
+        	hierarchycal = false;
+        }
+        $(this).val(this.checked);  
+
+        var dataJSON = {
+        	'action': 'd2w_hierarchycal_post_action',
+        	'hierarchical': hierarchycal,
+        	'drupal_type': drupal_type,
+        };
+
+        $.ajax({
+        	method: "POST",
+        	url: wp_ajax.ajax_url,
+        	data: dataJSON,
+        })
+        .done(function( response ){
+	    		console.log('Successful AJAX Call! /// Return Data: ' + response);
+	    		var parsed_data = JSON.parse(response);
+	    		if ( parsed_data.status ){
+	    			alert('saved');
+	    		}
+        });  	
+    });
 
     /**
      * Migrates batch group of images

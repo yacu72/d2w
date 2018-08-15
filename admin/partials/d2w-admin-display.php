@@ -37,14 +37,19 @@
 
 		$migrateImages = new d2w_Migrate_Images;
 
-		print '<pre>';
-		//print_r( $migrateImages->d2w_migrate_images_info( 'moflow_photo' ) );
-		//$images_groups_test = get_option('d2w_moflow_photo_images_import');
-		//print_r( $images_groups_test );
-		print '</pre>';
+
+
 
 		//echo $migrateImages->d2w_batch_migration_display( '', 'moflow_photo' );
 		//echo $migrateImages->d2w_image_content_filter( 44 );
+
+		//$permalink_uris = get_option('permalink-manager-uris');
+
+		print '<pre>';
+		//print_r($permalink_uris);
+		//$permalink_uris[150] = 'oradea-university-application-requirements.html';
+		//update_option('permalink-manager-uris', $permalink_uris);
+		print '</pre>';		
 
 	?>
 
@@ -177,6 +182,11 @@
 										<select class="select-post-type" data-post-type="<?php echo $type; ?>" name="migrate-<?php echo $name; ?>">
 											<?php echo $migratePost->d2w_migrate_post_types_options( $type ) ?>
 										</select>
+
+										<hr>
+										<label>Make Hierarchycal:</label>
+										<input type="checkbox" data-drupal-type="<?php echo $type; ?>" name="hierarchycal-box" value="1" <?php checked( 'true', get_option('d2w_'. $type .'_hierarchycal') ); ?> >
+										<hr>
 
 										<h3>Map fields:</h3>
 										<hr>

@@ -397,5 +397,24 @@ class D2w_Admin {
 		exit;
 	}
 
+	/**
+	 * Handles AJAX hierarchycal post type call 
+	 */
+	public function d2w_hierarchycal_post_handler() {
+		
+		$hierarchycal = $_POST['hierarchical'];
+    $drupal_node_type = $_POST['drupal_type'];
+    $status = '';
+
+    // Set the migration flag to true.
+		$status = update_option( 'd2w_'. $drupal_node_type .'_hierarchycal', $hierarchycal );
+
+		$send_to_ajax = array(
+			'status' => $status,
+		);
+
+    echo json_encode( $send_to_ajax );
+	}
+
 
 }

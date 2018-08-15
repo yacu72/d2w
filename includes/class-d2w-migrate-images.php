@@ -282,8 +282,6 @@ class d2w_Migrate_Images {
 
 		}
 
-	
-
 		return $result;
 	}
 
@@ -308,8 +306,6 @@ class d2w_Migrate_Images {
 			$image_name[$image] = end( $image_path_array );
 
 		}
-
-		print_r( $image_name );
 
 		foreach ( $matches[0] as $key => $img ){
 
