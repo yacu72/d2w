@@ -10,8 +10,8 @@ class d2w_Migrate_Images {
 	 * Creates Attachment post  type with images related to posts.
 	 *
 	 * @param (string) $drupal_node_type
-	 * @param (int) $wp_post_id;
-	 * @param (string) $image
+	 * @param (int) $wp_post_id: the post ID the media is associated with
+	 * @param (string) $image: The URL of the image to download
 	 */
 	function d2w_migrate_image( $drupal_node_type = NULL , $image = NULL, $wp_post_id = NULL ) {
 

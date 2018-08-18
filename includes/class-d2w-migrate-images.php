@@ -43,6 +43,8 @@ class d2w_Migrate_Images {
 
 		$size_limit = get_option( 'd2w_size_limit_'. $drupal_node_type);
 
+		$images = array();
+
 		// Load node types relation
 		if ( $drupal_node_type ) {
 			$type_rel = get_option( 'd2w-node-types-par' );
@@ -199,7 +201,7 @@ class d2w_Migrate_Images {
 
 		    // reference new image to set as featured
 		    $attachments = get_posts($args);
-
+		    $i = 0;
 		    if(isset($attachments) && is_array($attachments)){
 		        foreach($attachments as $attachment){
 		            // grab source of full size images (so no 300x150 nonsense in path)
@@ -207,12 +209,15 @@ class d2w_Migrate_Images {
 		            // determine if in the $media image we created, the string of the URL exists
 		            if(strpos($media, $image[0]) !== false){
 		                // if so, we found our image. set it as thumbnail
-		                set_post_thumbnail($wp_post_id, $attachment->ID);
-		                return $attachment->ID;
+		                $status = set_post_thumbnail($wp_post_id, $attachment->ID);
+		                if ($status) {
+		                	$i++; // counter of sucessfull migrations
+		                }
+		                return $i;
 		                // only want one image
 		                break;
 		            }
-		            return $attachment->ID;
+		            return $i;
 		        }
 		    }
 		}
@@ -328,5 +333,186 @@ class d2w_Migrate_Images {
 		return $output;
 
 	}
+
+	/**
+	 * Helper function 
+	 */
+	public function d2w_image_path_by_fid( $fid, $wp_post_id ) {
+
+		global $wpdb;
+
+		// Load path to image to download.
+		$migrate_settings = get_option( 'd2w_migrate_settings' );
+		foreach ($migrate_settings as $key => $data ) {
+			if ( $data[0] == 'images-url' ) {
+				$image_path = $data[1];
+			}
+		}		
+
+		$sql = "SELECT f.*
+		FROM files f
+		WHERE f.fid = %d";
+
+		$res = $wpdb->get_results( $wpdb->prepare( $sql, $fid ) );
+
+		foreach ( $res as $key => $value ) {
+
+			$path = str_replace( 'sites/dev.medstudentadvisors.do5.mflw.us/files', 'sites/medstudentadvisors.com/files', $value->filepath );
+
+			$images[$value->ID][] = array(
+				'filename' => $value->filename,
+				'path' => $path,
+				'size' => $value->filesize,
+				'filemime' => $value->filemime,
+			);
+
+			$this->d2w_migrate_image( '' , $image_path .'/'. $path, $wp_post_id );
+
+			$total_size += $value->filesize;
+
+			$i++;
+		}		
+
+	}
+
+	/**
+	 * Migrate Filefields
+	 *
+	 *
+	 *
+	 */
+	public function d2w_migrate_fielfields_options( $drupal_node_type ) {
+
+		global $wpdb;
+		$options = '<option value="0">Select filefield...</option>';
+		$out = '';
+
+		$default_options = get_option( 'd2w_drupal_filefields' );
+
+		$sql = "SELECT cnf.field_name
+		FROM content_node_field cnf
+		WHERE cnf.type = '%s'";
+
+		$res = $wpdb->get_results( $wpdb->prepare( $sql, 'filefield') );
+
+		foreach ( $res as $key => $field ){
+
+			if ( isset( $default_options[$drupal_node_type][$field->field_name] ) && $default_options[$drupal_node_type][$field->field_name] == $field->field_name ) {
+
+				$options .= '<option selected="selected" value="'. $field->field_name .'">'. $field->field_name .'</option>';
+
+			} else {
+
+				$options .= '<option value="'. $field->field_name .'">'. $field->field_name .'</option>';
+
+			}
+
+		}
+
+		$out = '<select data-drupal-type="'. $drupal_node_type .'" data-action="select-filefield">';
+		$out .= $options;
+		$out .= '</select>';
+		$out .=  '<div class="filefield-wrapper" >';
+		$out .= '</div>';
+
+
+		return $out;
+
+	}
+
+	/**
+	 * Search files by filefield 
+	 *
+	 * Group files to migrate by a size limit to prebent TIME_MAX issues.
+	 *
+	 * @param (string) $drupal_node_type: The name of the Drual content type related to the fiels migration
+	 * @param (string) $drupal_filefield: The name of the filefield
+	 * @param (int) $wp_post_id: The ID of the post
+	 * 
+	 * @return (array) Post fiels grouped by files sixe limit, and text string with details of the gouped files. 
+	 */
+	public function d2w_files_by_filefield( $drupal_node_type, $drupal_filefield, $wp_post_id = NULL ) {
+
+		global $wpdb;
+
+		$content_type_row = 'content_type_'. $drupal_node_type;
+		$drupal_field_fid = 'ctmr.'. $drupal_filefield .'_fid';
+		$total_size = $all_files = 0;
+		$i = 1;
+		$size_limit = 300000; // TODO: load by variable
+		$bigest = 0;
+		$site_url = get_home_url();
+
+		$filefield_size_limits = get_option('d2w_filefield_size_limits');
+
+		$size_limit = isset( $filefield_size_limits[$drupal_node_type][$drupal_filefield]) ? $filefield_size_limits[$drupal_node_type][$drupal_filefield] : 500000 ;
+
+		$size_options  = ( $size_limit == 500000 ) ? '<option selected="selected" value="500000">500kb</option>' : '<option value="500000">500kb</option>';
+		$size_options .= ( $size_limit == 1000000 ) ? '<option selected="selected"  value="1000000">1MB</option>' : '<option value="1000000">1MB</option>';
+		$size_options .= '<option value="2000000">2MB</option>';
+		$size_options .= '<option value="5000000">5MB</option>';
+
+		$select_size = '<select data-drupal-field="'. $drupal_filefield .'" data-drupal-type="'. $drupal_node_type.'" data-action="filesize-limit" >'. $size_options .'</select>';
+
+
+		$and = ($wp_post_id) ? ' AND wp.ID = %d' : '';
+		$args = ($wp_post_id) ? array('publish', $wp_post_id ) : array( 'publish' ); 
+
+		$sql = "SELECT wp.ID, $drupal_field_fid, f.filesize, f.filepath
+FROM files f
+INNER JOIN $content_type_row ctmr ON f.fid =  $drupal_field_fid
+INNER JOIN wp_posts wp ON wp.old_ID = ctmr.nid 
+WHERE wp.post_status = '%s' $and ";
+
+		$res = $wpdb->get_results( $wpdb->prepare( $sql, $args ));
+
+		foreach ( $res as $key => $field ){
+
+			$bigest = ($field->filesize > $bigest) ? $field->filesize : $bigest;
+
+			$total_size = $total_size + $field->filesize;
+			$all_files = $all_files + $field->filesize;
+
+			if( $total_size > $size_limit ){
+				$i++;
+				$total_size = 0;
+			}
+
+			$groups[$i][$field->ID] = $field->filepath;
+
+
+		}
+
+		$filefield_data = get_option('d2w_filefields_data');
+
+		$filefield_data[$drupal_node_type] = $groups;
+		
+		update_option('d2w_filefields_data', $filefield_data );
+
+		// TODO: move this to template
+		$html = '';
+
+		$wrapper = $all_files .'kb divided in <span class="groups-counter">'. count ($groups) .'</span> groups of '. $select_size .'. (Max size:'. $bigest .'kb)';
+
+		$wrapper .= '<hr>';
+
+		foreach ($groups as $group => $files ){
+			$html .= count( $files ) .' files <input data-action="migrate-filefield" type="submit" data-drupal-field="'. $drupal_filefield .'" data-drupal-type="'. $drupal_node_type .'" data-group="'. $group .'" value="Migrate Files" >';
+			$html .= '<img class="waiting" src="'. $site_url .'/wp/wp-admin/images/wpspin_light.gif" >';
+			$html .= '<hr>';
+		}
+
+		$out['wrapper'] = $wrapper;
+
+		$out['html'] = $html;
+
+		$out['field_name'] = $drupal_filefield;
+
+		return $out;
+
+	}
+
+
+	
 
 }

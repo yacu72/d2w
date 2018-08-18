@@ -2,7 +2,7 @@
 	'use strict';
 
 	/**
-	 * All of the code for your admin-facing JavaScript source
+	 * All of the code for your admin-facing JavaScript source .   
 	 * should reside in this file.
 	 *
 	 * Note: It has been assumed you will write jQuery code here, so the
@@ -175,7 +175,7 @@
     $('.field-option').change(function() {
     	
     	var drupal_post_type = $(this).parent().closest('.inside').children('select.select-post-type').attr('data-post-type');
-    	var drupal_field = $(this).parent().closest('dl').children('dt').html();
+    	var drupal_field = $(this).attr('data-drupal-field');
     	var pod_field = $(this).val();
 
 	 		var dataJSON = {
@@ -287,6 +287,9 @@
 
 	 	});
 
+	 	/**
+	 	 * Handles Ajax Call for field type change
+	 	 */
 	 	$('.button-migrate-tax').click( function(){
 
 	 		var drupal_node_type = $(this).attr('data-post-type');
@@ -309,6 +312,120 @@
 	 			console.log('Successful AJAX Call! /// Return Data: ' + response);
 	 			var parsed_data = JSON.parse(response);
 				$('input[data-post-type='+ parsed_data.drupal_node_type  +']').replaceWith('<i class="dashicons dashicons-yes"></i>');	
+	 		});	 		
+
+	 		return false;
+	 	});
+
+	 	$('select[name=field-type]').change(function() {
+
+	 		var drupal_type = $(this).attr('data-drupal-type');
+	 		var drupal_field = $(this).attr('data-drupal-field');
+	 		var field_type = $(this).val();
+
+	 		var dataJSON = {
+	 			'action': 'd2w_field_type_action',
+	 			'drupal_type': drupal_type,
+	 			'drupal_field': drupal_field,
+	 			'field_type': field_type,
+	 		};
+
+	 		$.ajax({
+	 			method: "POST",
+	 			url: wp_ajax.ajax_url,
+	 			data: dataJSON,
+	 		})
+	 		.done( function( response ){
+	 			console.log('Successful AJAX Call! /// Return Data: ' + response);
+	 			var parsed_data = JSON.parse(response);	 	
+	 		});
+
+	 	});
+
+	 	/**
+	 	 * Set Filefield Name.
+	 	 */
+	 	$('select[data-action=select-filefield]').change(function() {
+
+
+	 		var formData = {
+	 			'drupal_node_type' : $(this).attr('data-drupal-type'),
+	 			'drupal_field' 		 : $(this).val(),
+	 			'button'           : 'set_filename',
+	 		};
+
+	 		var dataJSON = {
+	 			'action'   : 'd2w_migrate_filefield',
+	 			'formData' : formData,
+	 		}
+
+	 		$.ajax({
+				method: "POST",
+				url: wp_ajax.ajax_url,
+				data: dataJSON,
+	 		})
+	 		.done( function( response ) {
+        console.log('Successful AJAX Call! /// Return Data: ' + response);
+        var mydata = JSON.parse( response );
+	 		});
+
+	 	});
+
+	 	/**
+	 	 * Set Filefield Size Limit.
+	 	 */
+	 	$('select[data-action=filesize-limit]').change(function() {
+
+	 		var formData = {
+	 			'filesize_limit': $(this).val(),
+	 			'drupal_node_type'   : $(this).attr('data-drupal-type'),
+	 			'drupal_field'  : $(this).attr('data-drupal-field'),
+	 			'button'        : 'set_filesize_limit',
+	 		}
+
+	 		var dataJSON = {
+	 			'action'   : 'd2w_migrate_filefield',
+	 			'formData' : formData,
+	 		}
+
+	 		$.ajax({
+				method: "POST",
+				url: wp_ajax.ajax_url,
+				data: dataJSON,
+	 		})
+	 		.done( function( response ) {
+        console.log('Successful AJAX Call! /// Return Data: ' + response);
+        var mydata = JSON.parse( response );
+        $('div[data-field='+ mydata.drupal_field +']').html(mydata.html);
+	 		});	 		
+
+	 	});
+
+	 	$('input[data-action=migrate-filefield]').click(function() {
+
+	 		$(this).attr('disabled', 'disabled').next('img').removeClass('waiting').addClass('processing');
+
+	 		var formData = {
+	 			'drupal_node_type'  : $(this).attr('data-drupal-type'),
+	 			'group_id'        : $(this).attr('data-group'),
+	 			'drupal_field'      : $(this).attr('data-drupal-field'),
+	 			'button'            : 'migrate-files',
+	 		};
+
+	 		var dataJSON = {
+	 			'action'    : 'd2w_migrate_filefield',
+	 			'formData'  :  formData,
+	 		};
+
+	 		$.ajax({
+				method: "POST",
+				url: wp_ajax.ajax_url,
+				data: dataJSON,
+	 		})
+	 		.done( function( response ) {
+        console.log('Successful AJAX Call! /// Return Data: ' + response);
+        var mydata = JSON.parse( response );
+				$('.processing').addClass('waiting').removeClass('processing');        
 	 		});	 		
 
 	 		return false;

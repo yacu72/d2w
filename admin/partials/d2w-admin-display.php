@@ -23,6 +23,7 @@
 	 * This form hold's all the calls related to migration functions.
 	 */
 
+
 		$migrateUsers = new d2w_Migrate_Users;
 
 		$migratePost = new d2w_Migrate_Post_Types;
@@ -36,20 +37,6 @@
 		$migrateComments = new d2w_Migrate_Comments;
 
 		$migrateImages = new d2w_Migrate_Images;
-
-
-
-
-		//echo $migrateImages->d2w_batch_migration_display( '', 'moflow_photo' );
-		//echo $migrateImages->d2w_image_content_filter( 44 );
-
-		//$permalink_uris = get_option('permalink-manager-uris');
-
-		print '<pre>';
-		//print_r($permalink_uris);
-		//$permalink_uris[150] = 'oradea-university-application-requirements.html';
-		//update_option('permalink-manager-uris', $permalink_uris);
-		print '</pre>';		
 
 	?>
 
@@ -203,6 +190,42 @@
 
 										<?php } ?>
 										<hr>
+
+										<?php
+										/**
+										 * MIGRATE FILEFIELDS
+										 */
+										?>
+										<h3>Migrate Images from Filefields</h3>
+										<?php echo  $migrateImages->d2w_migrate_fielfields_options( $type ); ?>
+
+										<?php 
+											$default_options = get_option( 'd2w_drupal_filefields' ); 
+											$filefield = isset($default_options[ $type ]) ? $default_options[ $type ] : array();
+
+											$files = array();
+
+											foreach ($filefield as $name ) {
+
+												$files = $migrateImages->d2w_files_by_filefield( $type, $name);
+
+											}
+
+											echo '<hr>';
+											if ( isset($files['wrapper']) ){
+												echo $files['wrapper'];
+											}
+											if ( isset($files['field_name']) ){
+												echo '<div data-field="'. $files['field_name'] .'" class="filefields-wrapper" >';
+											}
+											if ( isset($files['html']) ){
+												echo $files['html'];
+												echo '</div>';
+											}
+											
+
+										?>
+
 										<?php 
 										/**
 										 *

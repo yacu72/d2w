@@ -215,7 +215,19 @@ class D2w {
      * Ajax call for Hierarchycal post type
      */   	
     $this->loader->add_action( 'wp_ajax_d2w_hierarchycal_post_action', $plugin_admin, 'd2w_hierarchycal_post_handler' );
-    $this->loader->add_action( 'wp_ajax_nopriv_d2w_hierarchycal_post_action', $plugin_admin, 'd2w_hierarchycal_post_handler' );     
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_hierarchycal_post_action', $plugin_admin, 'd2w_hierarchycal_post_handler' );  
+
+    /**
+     * Ajax call for field type
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_field_type_action', $plugin_admin, 'd2w_field_type_handler' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_field_type_action', $plugin_admin, 'd2w_field_type_handler' );
+
+    /**
+     * Ajax call for field type
+     */   	
+    $this->loader->add_action( 'wp_ajax_d2w_migrate_filefield', $plugin_admin, 'd2w_migrate_filefield_handler' );
+    $this->loader->add_action( 'wp_ajax_nopriv_d2w_migrate_filefield', $plugin_admin, 'd2w_migrate_filefield_handler' );    
 
 	}
 

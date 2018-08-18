@@ -232,11 +232,6 @@ class D2w_Admin {
 	 */
 	public function d2w_field_relationship_save() {
 
-		// exit if no wp field is selected
-		if ( !$_POST['pod_field']) {
-			exit;
-		}		
-
 		$post_type = $_POST['post_type'];
 		$drupal_field = $_POST['drupal_field'];
 		$wp_field = $_POST['pod_field'];
@@ -249,7 +244,7 @@ class D2w_Admin {
 
 		$send_to_ajax = array(
 			'data' => $option_saved,
-			'fields' => $post_type .'|'. $drupal_field .'|'. $pod_field,
+			'fields' => $post_type .'|'. $drupal_field .'|'. $wp_field,
 		);
 
 		echo json_encode($send_to_ajax);
@@ -414,6 +409,131 @@ class D2w_Admin {
 		);
 
     echo json_encode( $send_to_ajax );
+
+    exit;
+	}
+
+	/**
+	 * Ajax Response: Saves field type
+	 */
+	public function d2w_field_type_handler(){
+
+		$drupal_node_type = $_POST['drupal_type'];
+		$drupal_field_name = $_POST['drupal_field'];
+		$field_type = $_POST['field_type'];
+
+		$field_types = get_option('d2w_field_types');
+
+		$field_types[$drupal_field_name] = $field_type;
+
+		$field_type_saved = update_option( 'd2w_field_types', $field_types );
+
+		$send_to_ajax = array(
+			'saved' => $field_type_saved,
+		);
+
+		echo json_encode( $send_to_ajax );
+		
+		exit;
+	}
+
+
+	public function d2w_migrate_filefield_handler() {
+
+		$migrateImages = new d2w_Migrate_Images;
+
+		// Collects Data from ajax
+		$form_data = $_POST['formData'];
+
+		// Migrate Files
+		if ( $form_data['button'] == 'migrate-files' ){
+
+	 		$formData = $_POST['formData'];
+
+			// Load path to image to download.
+			$migrate_settings = get_option( 'd2w_migrate_settings' );
+			foreach ($migrate_settings as $key => $data ) {
+				if ( $data[0] == 'images-url' ) {
+					$image_path = $data[1];
+				}
+			}			
+
+			$images = get_option('d2w_filefields_data');
+
+			foreach( $images[$formData['drupal_node_type']][$formData['group_id']] as $ID => $image ){
+
+				// TODO. do this replace more generic, maybe adding something in settings section.
+				$path = str_replace( 'sites/dev.medstudentadvisors.do5.mflw.us/files', 'sites/medstudentadvisors.com/files', $image );
+
+
+				$counter = $migrateImages->d2w_migrate_image( '' , $image_path .'/'. $path, $ID );
+
+				$migrateImages->d2w_image_content_filter( $ID );
+
+				$paths .= $path .', ';
+
+				$parents .= $ID .', ';
+			}
+
+			$send_to_ajax = array(
+  			'counter' => $counter,
+				'drupal_type' => $formData['drupal_node_type'],
+				'group' => $formData['group_id'],
+			);				 		
+
+		}
+
+		// Update filefield 
+		if ( $form_data['button'] == 'set_filename' ){
+
+			$filefields = get_option('d2w_drupal_filefields');
+
+			$filefields[$form_data['drupal_node_type']][$form_data['drupal_field']] = $form_data['drupal_field'];
+
+			if ( $form_data['drupal_field'] == '0') {
+				unset($filefields[$form_data['drupal_node_type']]);
+			}
+
+			$status = update_option( 'd2w_drupal_filefields', $filefields );
+
+			if ( $status ){
+				foreach( $filefields  as $node_type => $field_name ){
+					$counter = count(  $field_name );
+				}
+			}
+
+			$send_to_ajax = array(
+				'status' => $status,
+				'data' => $counter,
+				'field' => $form_data['drupal_field'],
+			);
+		}
+
+		// Update filesixe limit
+		if ( $form_data['button'] == 'set_filesize_limit' ){
+
+			$filefield_size_limits = get_option('d2w_filefield_size_limits');
+
+			$filefield_size_limits[$form_data['drupal_node_type']][$form_data['drupal_field']] = $form_data['filesize_limit'];
+
+			$status = update_option( 'd2w_filefield_size_limits', $filefield_size_limits );
+
+			
+
+			$files = $migrateImages->d2w_files_by_filefield( $form_data['drupal_node_type'], $form_data['drupal_field'] );
+
+			$send_to_ajax = array(
+				'status' => $status,
+				'drupal_type' => $form_data['drupal_node_type'],
+				'drupal_field' => $form_data['drupal_field'],
+				'html' => $files['html'],
+			);
+
+		}
+
+		echo json_encode( $send_to_ajax );
+		
+		exit;		
 	}
 
 

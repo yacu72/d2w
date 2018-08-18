@@ -106,15 +106,16 @@ class d2w_Migrate_Post_Types {
 				// Save fields values
 				$migrateFields = new d2w_Migrate_Post_fields;
 				$meta_array = $migrateFields->d2w_migrate_drupal_fields( $drupal_node_type, $post_id );
-				foreach( $meta_array as $key => $metadata ) {
-					$field = $metadata[1];
-					add_post_meta( $post_id, "$field", $metadata[2] );
-				}
 
+				foreach( $meta_array as $key => $metadata ) {
+
+					$field = $metadata['field_name'];
+					add_post_meta( $post_id, "$field", $metadata['field_value'] );
+
+				}
 
 				// Set the migration flag to true.
 				update_option( 'd2w_'. $drupal_node_type .'_migrated', $i );
-
 
 			} else {
 				$post_id = -2;
@@ -130,7 +131,7 @@ class d2w_Migrate_Post_Types {
 
 		if ( $hierarchycal && ($drupal_node_type == 'book') ) {
 
-			// query that fix parent pages
+			// query that set parent/child pages relation
 			$sql = "SELECT wpp.ID new_nid, wpp1.ID new_parent
 		FROM wp_posts wpp
 		INNER JOIN book b ON wpp.old_ID = b.nid
@@ -218,10 +219,49 @@ AND COLUMN_NAME NOT IN ('vid', 'nid')";
 		foreach ($node_fields as $key => $field ) {
 			$fields[$field->field_name] = $field->field_name;
 
-			$out .= '<dt class="drupal-field">'. $field->field_name .'</dt><dd>Select wp field par <select class="field-option" data-post-type="fields-'. $drupal_node_type .'">'. $this->d2w_beta_pods_fields_options( $drupal_node_type, $field->field_name) .'</select></dd><hr>';
+			$out .= '<dt class="drupal-field">'. $field->field_name .'</dt><dd>Select wp field par <select class="field-option" data-post-type="fields-'. $drupal_node_type .'" data-drupal-field="'. $field->field_name .'" >'. $this->d2w_beta_pods_fields_options( $drupal_node_type, $field->field_name) .'</select>';
+
+			$out .= $this->select_field_type( $drupal_node_type, $field->field_name );
+
+			$out .= '</dd><hr>';
 		}
 
 		return '<dl>'. $out .'</dl>';
+	}
+
+	/**
+	 * Field Type Selection
+	 */
+	public function select_field_type( $drupal_node_type, $drupal_field_name ) {
+
+			$field_types = get_option( 'd2w_field_types' );
+
+			$type_options = array(
+				'0' => 'Select type...',
+				'image' => 'Image',
+			);
+
+			$out  = '<select name="field-type" data-drupal-type="'. $drupal_node_type .'" data-drupal-field="'. $drupal_field_name .'" >';
+
+			foreach( $type_options as $type => $title ){
+
+				$field_type = ( isset($field_types[$drupal_field_name])  && $field_types[$drupal_field_name] == $type ) ? $field_types[$drupal_field_name] : '';
+
+				if( $type == $field_type ){
+
+					$out .= '<option selected="selected" value="'. $type .'" >'. $title .'</option>'; 
+
+				} else {
+
+					$out .= '<option value="'. $type .'" >'. $title .'</option>'; 
+		
+				}
+
+			}
+
+			$out .= '</select>';
+	
+			return $out;
 	}
 
 	/**
